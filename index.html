@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#d9cfa8">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Timecard">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icon.png">
+  <link rel="icon" type="image/png" href="icon.png">
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js");
+    }
+  </script>
+<title>Timecard Helper</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Share Tech Mono', monospace;
+    background: #2a2a2a;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  /* ── MONITOR SHELL ── */
+  .monitor {
+    background: linear-gradient(160deg, #e8e0c8 0%, #d9cfa8 40%, #cfc298 100%);
+    border-radius: 24px;
+    padding: 28px 24px 44px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow:
+      0 0 0 1px #a89870,
+      0 6px 40px rgba(0,0,0,0.7),
+      inset 0 1px 0 #f0e8d0,
+      inset 0 -2px 0 #b0a080,
+      inset 2px 0 0 #ddd0b0,
+      inset -2px 0 0 #b8a880;
+    position: relative;
+  }
+
+  /* vent slits */
+  .monitor::after {
+    content: '| | | | | | | | | | |';
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #8a7a58;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  /* green power LED */
+  .monitor::before {
+    content: '';
+    position: absolute;
+    bottom: 16px;
+    right: 44px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #33ff33;
+    box-shadow: 0 0 6px #33ff33, 0 0 12px #33ff3366;
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* red LED */
+  .led-red {
+    position: absolute;
+    bottom: 16px;
+    right: 28px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #cc1100;
+    box-shadow: 0 0 5px #cc1100, 0 0 10px #cc110066;
+  }
+
+  /* ── SCREEN ── */
+  .screen {
+    background: #020e02;
+    border-radius: 12px;
+    padding: 20px 18px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 60px rgba(0,0,0,0.6),
+      inset 0 0 20px rgba(51,255,51,0.04),
+      0 0 20px rgba(51,255,51,0.08);
+  }
+
+  /* curved glass reflection */
+  .screen::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 45%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, transparent 100%);
+    border-radius: 12px 12px 60% 60% / 12px 12px 30px 30px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* screen edge inner shadow for depth */
+  .screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.7);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* ── SCANLINES ── */
+  .scanlines {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 5;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 3px,
+      rgba(0,0,0,0.22) 3px, rgba(0,0,0,0.22) 4px
+    );
+    border-radius: 12px;
+  }
+
+  /* ── PHOSPHOR FLICKER ── */
+  .flicker {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 6;
+    animation: flicker 8s step-start infinite;
+    border-radius: 12px;
+  }
+  @keyframes flicker {
+    0%,100% { opacity: 0; }
+    92% { opacity: 0; }
+    93% { opacity: 0.03; }
+    94% { opacity: 0; }
+    97% { opacity: 0.02; }
+    98% { opacity: 0; }
+  }
+
+  /* ── CONTENT ── */
+  .content { position: relative; z-index: 2; color: #33ff33; }
+
+  .header { border-bottom: 1px solid #33ff3344; padding-bottom: 10px; margin-bottom: 14px; }
+  .sys-line { font-size: 10px; color: #1a8c1a; margin-bottom: 4px; letter-spacing: 1px; }
+  h1 { font-family: 'VT323', monospace; font-size: 26px; color: #ffffff; letter-spacing: 3px; text-shadow: 0 0 10px #33ff3399; line-height: 1; }
+  .subtitle { font-size: 10px; color: #1a8c1a; margin-top: 4px; letter-spacing: 0.5px; line-height: 1.8; }
+
+  .day-card {
+    border: 1px solid #1a5c1a;
+    border-left: 2px solid #33ff33;
+    padding: 9px 11px;
+    margin-bottom: 7px;
+    background: rgba(0,20,0,0.5);
+  }
+  .day-top { margin-bottom: 7px; }
+  .day-name { font-family: 'VT323', monospace; font-size: 19px; color: #33ff33; letter-spacing: 2px; text-shadow: 0 0 6px #33ff3388; }
+
+  .times-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 9px; }
+  .time-group { display: flex; flex-direction: column; gap: 3px; }
+  .time-label { font-size: 9px; color: #1a8c1a; letter-spacing: 1px; text-transform: uppercase; }
+  input[type=time] {
+    font-family: 'VT323', monospace;
+    font-size: 19px;
+    padding: 3px 6px;
+    border: 1px solid #1a5c1a;
+    width: 100%;
+    background: #000;
+    color: #33ff33;
+    outline: none;
+    letter-spacing: 1px;
+    text-shadow: 0 0 4px #33ff3366;
+  }
+  input[type=time]:focus { border-color: #33ff33; box-shadow: 0 0 6px #33ff3344; }
+  input[type=time]::-webkit-calendar-picker-indicator { filter: invert(1) sepia(1) saturate(3) hue-rotate(80deg); opacity: 0.35; }
+
+  .bottom-row { display: flex; align-items: center; justify-content: space-between; }
+  .lunch-label { font-size: 9px; color: #1a8c1a; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .lunch-btns { display: flex; gap: 4px; }
+  .lunch-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; padding: 4px 8px;
+    border: 1px solid #1a5c1a;
+    background: #000;
+    color: #1a8c1a;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+  .lunch-btn.active { background: #001a00; border-color: #33ff33; color: #33ff33; box-shadow: 0 0 5px #33ff3333; }
+  .lunch-btn:hover { border-color: #33ff3355; color: #33ff3377; }
+
+  .hours-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .hours-label { font-size: 9px; color: #1a8c1a; letter-spacing: 1px; text-transform: uppercase; }
+  .pill { font-family: 'VT323', monospace; font-size: 19px; padding: 1px 9px; letter-spacing: 1px; border: 1px solid; }
+  .pill-ok    { color: #ffffff; border-color: #ffffff55; text-shadow: 0 0 6px #fff; background: #001a00; }
+  .pill-short { color: #ff4422; border-color: #ff442255; text-shadow: 0 0 6px #ff4422; background: #130000; }
+  .pill-over  { color: #ff4422; border-color: #ff442255; text-shadow: 0 0 6px #ff4422; background: #130000; }
+  .pill-none  { color: #1a5c1a; border-color: #0f2e0f; background: #000; }
+
+  .divider { border: none; border-top: 1px solid #1a5c1a; margin: 0.9rem 0; }
+
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 0.8rem; }
+  .metric { background: rgba(0,20,0,0.5); border: 1px solid #1a5c1a; border-top: 2px solid #33ff33; padding: 8px 9px; }
+  .metric-label { font-size: 9px; color: #1a8c1a; margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .metric-value { font-family: 'VT323', monospace; font-size: 21px; color: #33ff33; text-shadow: 0 0 5px #33ff3366; letter-spacing: 1px; }
+  .metric-value.good { color: #ffffff; text-shadow: 0 0 8px #ffffffaa; }
+  .metric-value.bad  { color: #ff4422; text-shadow: 0 0 8px #ff442299; }
+  .metric-sub { font-size: 9px; color: #1a8c1a; margin-top: 2px; letter-spacing: 0.5px; }
+
+  .advice {
+    font-size: 10px;
+    padding: 9px 11px;
+    border: 1px solid #1a5c1a;
+    border-left: 2px solid #33ff33;
+    background: rgba(0,20,0,0.5);
+    line-height: 2;
+    letter-spacing: 0.5px;
+  }
+  .prompt { color: #33ff33; }
+  .advice-text { color: #33ff33; }
+  .advice-text.warn { color: #ff4422; }
+  .advice-text.good { color: #ffffff; }
+</style>
+</head>
+<body>
+<div class="monitor">
+  <div class="led-red"></div>
+  <div class="screen">
+    <div class="scanlines"></div>
+    <div class="flicker"></div>
+    <div class="content">
+      <div class="header">
+        <div class="sys-line">TIMESYS v2.4 // READY</div>
+        <h1>TIMECARD HELPER</h1>
+        <div class="subtitle">ROUNDS TO NEAREST 0.25H &nbsp;|&nbsp; LUNCH SUBTRACTED</div>
+      </div>
+      <div id="rows"></div>
+      <hr class="divider">
+      <div class="summary">
+        <div class="metric">
+          <div class="metric-label">This week</div>
+          <div class="metric-value" id="total">–</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Target</div>
+          <div class="metric-value">40H</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Diff</div>
+          <div class="metric-value" id="diff">–</div>
+          <div class="metric-sub" id="diff-sub"></div>
+        </div>
+      </div>
+      <div class="advice" id="advice"><span class="prompt">&gt; </span><span class="advice-text">AWAITING INPUT_</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const days = [
+  { name: 'MONDAY',    defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, target: 8.25 },
+  { name: 'TUESDAY',   defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, target: 8.25 },
+  { name: 'WEDNESDAY', defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, target: 8.25 },
+  { name: 'THURSDAY',  defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, target: 8.25 },
+  { name: 'FRIDAY',    defaultIn: '08:00', defaultOut: '15:30', defaultLunch: 30, target: 7.00 },
+];
+const WEEKLY_TARGET = 8.25 * 4 + 7;
+const LUNCH_OPTIONS = [30, 45, 60];
+const container = document.getElementById('rows');
+
+days.forEach((day, i) => {
+  const btns = LUNCH_OPTIONS.map(m => {
+    const label = m === 60 ? '1H' : `${m}M`;
+    const active = m === day.defaultLunch ? ' active' : '';
+    return `<button class="lunch-btn${active}" data-day="${i}" data-val="${m}">${label}</button>`;
+  }).join('');
+
+  const dc = document.createElement('div');
+  dc.className = 'day-card';
+  dc.innerHTML = `
+    <div class="day-top"><span class="day-name">${day.name}</span></div>
+    <div class="times-row">
+      <div class="time-group">
+        <div class="time-label">Clock in</div>
+        <input type="time" id="in-${i}" value="${day.defaultIn}">
+      </div>
+      <div class="time-group">
+        <div class="time-label">Clock out</div>
+        <input type="time" id="out-${i}" value="${day.defaultOut}">
+      </div>
+    </div>
+    <div class="bottom-row">
+      <div>
+        <div class="lunch-label">Lunch</div>
+        <div class="lunch-btns">${btns}</div>
+      </div>
+      <div class="hours-wrap">
+        <div class="hours-label">Hours</div>
+        <div id="pill-${i}" class="pill pill-none">–</div>
+      </div>
+    </div>
+  `;
+  container.appendChild(dc);
+});
+
+container.addEventListener('click', e => {
+  const btn = e.target.closest('.lunch-btn');
+  if (!btn) return;
+  const d = btn.dataset.day;
+  document.querySelectorAll(`.lunch-btn[data-day="${d}"]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  update();
+});
+
+function roundQ(min) {
+  const r = min % 15;
+  return r < 7.5 ? Math.floor(min / 15) * 15 : Math.ceil(min / 15) * 15;
+}
+function toMin(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function update() {
+  let total = 0;
+  days.forEach((day, i) => {
+    const inV  = document.getElementById(`in-${i}`).value;
+    const outV = document.getElementById(`out-${i}`).value;
+    const activeBtn = document.querySelector(`.lunch-btn.active[data-day="${i}"]`);
+    const lunch = activeBtn ? parseInt(activeBtn.dataset.val, 10) : day.defaultLunch;
+    const pill = document.getElementById(`pill-${i}`);
+    if (!inV || !outV) { pill.textContent = '–'; pill.className = 'pill pill-none'; return; }
+    const worked = (roundQ(toMin(outV)) - roundQ(toMin(inV)) - lunch) / 60;
+    total += worked;
+    pill.textContent = worked.toFixed(2) + 'H';
+    const d = worked - day.target;
+    pill.className = 'pill ' + (Math.abs(d) < 0.01 ? 'pill-ok' : d < 0 ? 'pill-short' : 'pill-over');
+  });
+
+  const diff = total - WEEKLY_TARGET;
+  const diffEl = document.getElementById('diff');
+  const subEl  = document.getElementById('diff-sub');
+  const advEl  = document.getElementById('advice');
+  document.getElementById('total').textContent = total.toFixed(2) + 'H';
+
+  if (Math.abs(diff) < 0.01) {
+    diffEl.textContent = 'ON TARGET'; diffEl.className = 'metric-value good';
+    subEl.textContent = '';
+    advEl.innerHTML = '<span class="prompt">&gt; </span><span class="advice-text good">STATUS: TARGET REACHED. NOTHING TO MAKE UP.</span>';
+  } else if (diff < 0) {
+    const mins = Math.round(Math.abs(diff) * 60);
+    diffEl.textContent = '-' + Math.abs(diff).toFixed(2) + 'H'; diffEl.className = 'metric-value bad';
+    subEl.textContent = mins + ' MIN SHORT';
+    advEl.innerHTML = `<span class="prompt">&gt; </span><span class="advice-text warn">MAKE UP ${mins} MIN (${Math.abs(diff).toFixed(2)}H). CLOCK IN EARLIER OR STAY LATER.</span>`;
+  } else {
+    const mins = Math.round(diff * 60);
+    diffEl.textContent = '+' + diff.toFixed(2) + 'H'; diffEl.className = 'metric-value bad';
+    subEl.textContent = mins + ' MIN OVER';
+    advEl.innerHTML = `<span class="prompt">&gt; </span><span class="advice-text warn">WARNING: ${mins} MIN OVER 40H. LEAVE EARLY TO COMPENSATE.</span>`;
+  }
+}
+
+document.querySelectorAll('input[type=time]').forEach(el => el.addEventListener('change', update));
+update();
+</script>
+</body>
+</html>
