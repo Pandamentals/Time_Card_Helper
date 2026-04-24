@@ -9,10 +9,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Timecard">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" sizes="180x180" id="icon-apple" href="icons/tan-apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" id="icon-32" href="icons/tan-favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" id="icon-16" href="icons/tan-favicon-16x16.png">
-<link rel="shortcut icon" id="icon-ico" href="icons/tan-favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/tan-apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/tan-favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/tan-favicon-16x16.png">
+<link rel="shortcut icon" href="icons/tan-favicon.ico">
 <meta name="msapplication-TileColor" content="#1a1a1a">
 <script>
   if ("serviceWorker" in navigator) {
@@ -790,19 +790,10 @@ confirmYes.addEventListener('click', () => {
 // ── THEME TOGGLE ──
 const monitor     = document.getElementById('monitor');
 const themeToggle = document.getElementById('themeToggle');
-const iconApple   = document.getElementById('icon-apple');
-const icon32      = document.getElementById('icon-32');
-const icon16      = document.getElementById('icon-16');
-const iconIco     = document.getElementById('icon-ico');
 
 function applyTheme(theme) {
   monitor.classList.remove('theme-tan', 'theme-dark');
   monitor.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-tan');
-  const p = theme === 'dark' ? 'icons/dark-' : 'icons/tan-';
-  iconApple.href = p + 'apple-touch-icon.png';
-  icon32.href    = p + 'favicon-32x32.png';
-  icon16.href    = p + 'favicon-16x16.png';
-  iconIco.href   = p + 'favicon.ico';
   localStorage.setItem(THEME_KEY, theme);
 }
 
