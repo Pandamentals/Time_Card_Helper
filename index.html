@@ -384,18 +384,31 @@
     font-family: 'Share Tech Mono', monospace;
     font-size: 10px;
     padding: 6px 14px;
-    border: 1px solid #1a5c1a;
+    border: 1px solid #ff4422;
     background: #000;
-    color: #1a5c1a;
+    color: #ff4422;
     cursor: pointer;
     letter-spacing: 2px;
     transition: all 0.15s;
+    box-shadow: 0 0 6px #ff442244, 0 0 12px #ff442211;
   }
-  .reset-btn:hover { border-color: #ff442244; color: #ff442255; }
-  .reset-btn.confirming { border-color: #ff4422; color: #ff4422; box-shadow: 0 0 8px #ff442233; }
+  .reset-btn:hover { box-shadow: 0 0 10px #ff442266, 0 0 20px #ff442222; }
+  @keyframes red-pulse {
+    0%,100% { box-shadow: 0 0 8px #ff442266, 0 0 16px #ff442233; }
+    50%      { box-shadow: 0 0 16px #ff4422cc, 0 0 32px #ff442266, inset 0 0 8px #ff442122; }
+  }
+  .reset-btn.confirming {
+    border-color: #ff4422;
+    color: #ff4422;
+    animation: red-pulse 1.2s ease-in-out infinite;
+  }
 
   .confirm-btns { display: none; gap: 6px; }
   .confirm-btns.visible { display: flex; }
+  @keyframes green-pulse {
+    0%,100% { box-shadow: 0 0 6px #33ff3355, 0 0 12px #33ff3322; }
+    50%      { box-shadow: 0 0 12px #33ff33aa, 0 0 24px #33ff3355; }
+  }
   .confirm-yes, .confirm-no {
     font-family: 'Share Tech Mono', monospace;
     font-size: 10px;
@@ -404,11 +417,12 @@
     background: #000;
     cursor: pointer;
     letter-spacing: 1px;
+    transition: background 0.15s;
   }
-  .confirm-yes { border-color: #ff4422; color: #ff4422; }
+  .confirm-yes { border-color: #ff4422; color: #ff4422; animation: red-pulse 1.2s ease-in-out infinite; }
   .confirm-yes:hover { background: #130000; }
-  .confirm-no  { border-color: #1a5c1a; color: #1a8c1a; }
-  .confirm-no:hover  { border-color: #33ff3344; color: #33ff3366; }
+  .confirm-no  { border-color: #33ff33; color: #33ff33; animation: green-pulse 1.2s ease-in-out infinite; }
+  .confirm-no:hover  { background: #001a00; }
 
   /* ── DESKTOP ── */
   @media (min-width: 768px) {
