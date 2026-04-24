@@ -1,7 +1,9 @@
-const CACHE = "timecard-v1";
+const CACHE = "timecard-v3";
 const FILES = [
   "./index.html",
   "./manifest.json",
+  "./icon.png",
+  "./icon-180.png",
   "https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap"
 ];
 
