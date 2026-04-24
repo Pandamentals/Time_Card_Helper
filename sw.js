@@ -2,8 +2,18 @@ const CACHE = "timecard-v3";
 const FILES = [
   "./index.html",
   "./manifest.json",
-  "./icon.png",
-  "./icon-180.png",
+  "./icons/tan-apple-touch-icon.png",
+  "./icons/tan-android-chrome-192x192.png",
+  "./icons/tan-android-chrome-512x512.png",
+  "./icons/tan-favicon-32x32.png",
+  "./icons/tan-favicon-16x16.png",
+  "./icons/tan-favicon.ico",
+  "./icons/dark-apple-touch-icon.png",
+  "./icons/dark-android-chrome-192x192.png",
+  "./icons/dark-android-chrome-512x512.png",
+  "./icons/dark-favicon-32x32.png",
+  "./icons/dark-favicon-16x16.png",
+  "./icons/dark-favicon.ico",
   "https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap"
 ];
 
