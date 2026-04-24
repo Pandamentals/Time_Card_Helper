@@ -104,46 +104,68 @@
     box-shadow: 0 0 5px #cc1100, 0 0 10px #cc110066;
   }
 
-  /* ── THEME TOGGLE BUTTON (top-right bezel) ── */
+  /* ── THEME TOGGLE — LED indicator embedded in bezel top-left ── */
   .theme-toggle {
     position: absolute;
-    top: 16px;
-    right: 20px;
-    width: 24px;
-    height: 24px;
+    top: 17px;
+    left: 20px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
-    border: 2px solid;
+    border: none;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
     z-index: 20;
-    transition: all 0.2s;
-    line-height: 1;
     padding: 0;
+    transition: box-shadow 0.2s;
   }
+  /* sunken socket the LED sits in */
+  .theme-toggle::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    z-index: -1;
+  }
+  .monitor.theme-tan .theme-toggle::before {
+    background: radial-gradient(circle, #a89060 0%, #c0aa70 100%);
+    box-shadow:
+      inset 0 1px 2px rgba(0,0,0,0.5),
+      inset 0 -1px 0 rgba(255,255,255,0.15);
+  }
+  .monitor.theme-dark .theme-toggle::before {
+    background: radial-gradient(circle, #111 0%, #1e1e1e 100%);
+    box-shadow:
+      inset 0 1px 2px rgba(0,0,0,0.8),
+      inset 0 -1px 0 rgba(255,255,255,0.04);
+  }
+  /* the LED dot itself — amber when tan, green when dark */
   .monitor.theme-tan .theme-toggle {
-    background: #b8a870;
-    border-color: #8a7a58;
-    color: #5a4a30;
-    box-shadow: inset 0 1px 0 #d0c090, 0 1px 3px rgba(0,0,0,0.4);
+    background: radial-gradient(circle at 35% 35%, #ffe090, #cc8800);
+    box-shadow:
+      0 0 4px #cc880088,
+      0 0 8px #cc880044,
+      inset 0 1px 0 rgba(255,255,200,0.4);
   }
   .monitor.theme-tan .theme-toggle:hover {
-    background: #c8b880;
-    box-shadow: inset 0 1px 0 #e0d0a0, 0 2px 6px rgba(0,0,0,0.3);
+    box-shadow:
+      0 0 6px #ffaa00cc,
+      0 0 12px #cc880066,
+      inset 0 1px 0 rgba(255,255,200,0.4);
   }
   .monitor.theme-dark .theme-toggle {
-    background: #1a1a1a;
-    border-color: #444;
-    color: #555;
-    box-shadow: inset 0 1px 0 #2a2a2a, 0 1px 3px rgba(0,0,0,0.8);
+    background: radial-gradient(circle at 35% 35%, #66ff66, #00aa00);
+    box-shadow:
+      0 0 4px #33ff3399,
+      0 0 8px #33ff3344,
+      inset 0 1px 0 rgba(200,255,200,0.4);
   }
   .monitor.theme-dark .theme-toggle:hover {
-    border-color: #33ff3366;
-    color: #33ff3388;
-    box-shadow: 0 0 8px #33ff3322;
+    box-shadow:
+      0 0 8px #33ff33cc,
+      0 0 14px #33ff3366,
+      inset 0 1px 0 rgba(200,255,200,0.4);
   }
+  .theme-toggle:active { transform: scale(0.88); }
 
   /* ── SCREEN ── */
   .screen {
@@ -392,8 +414,18 @@
     h1 { font-size: 32px; }
     .sys-line, .subtitle { font-size: 11px; }
     .screen { padding: 24px 22px; }
-    #rows { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    #rows {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
     .day-card { margin-bottom: 0; }
+    /* Friday (5th card) sits centered under the 2-col grid */
+    .day-card:last-child {
+      grid-column: 1 / 2;
+      margin-left: 25%;
+      margin-right: 25%;
+    }
     .day-name { font-size: 22px; }
     input[type=time] { font-size: 22px; }
     .pill { font-size: 22px; padding: 2px 12px; }
@@ -407,7 +439,7 @@
 <body>
 <div class="monitor theme-tan" id="monitor">
   <div class="led-red"></div>
-  <button class="theme-toggle" id="themeToggle" title="Toggle monitor skin">◐</button>
+  <button class="theme-toggle" id="themeToggle" title="Toggle monitor skin"></button>
   <div class="screen">
     <div class="scanlines"></div>
     <div class="flicker"></div>
