@@ -456,7 +456,7 @@
 <body>
 <div class="monitor theme-tan" id="monitor">
   <div class="led-red"></div>
-  <button class="theme-toggle" id="themeToggle" title="Toggle monitor skin"></button>
+  <button class="theme-toggle" id="themeToggle" title="Toggle monitor skin" aria-label="Toggle monitor skin"></button>
   <div class="screen">
     <div class="scanlines"></div>
     <div class="flicker"></div>
@@ -663,6 +663,7 @@ function update() {
     const activeBtn = document.querySelector(`.lunch-btn.active[data-day="${i}"]`);
     const lunch  = activeBtn ? parseInt(activeBtn.dataset.val, 10) : day.defaultLunch;
     const worked = (roundQ(toMin(outV)) - roundQ(toMin(inV)) - lunch) / 60;
+    if (worked <= 0) { pill.textContent = 'ERR'; pill.className = 'pill pill-short'; return; }
     total += worked;
 
     pill.textContent = worked.toFixed(2) + 'H';
@@ -702,7 +703,11 @@ function updateBanner() {
 
   for (let i = 0; i < 4; i++) {
     if (isHolidayDay(i)) {
-      lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — WEEK IS 0.25H SHORT. MAKE UP TIME.`);
+      if (fridayIsHoliday()) {
+        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — TARGET ADJUSTED TO 40H.`);
+      } else {
+        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — WEEK IS 0.25H SHORT. MAKE UP TIME.`);
+      }
     }
   }
   if (fridayIsHoliday()) {

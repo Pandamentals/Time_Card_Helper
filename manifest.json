@@ -1,34 +1,13 @@
-const CACHE = "timecard-v3";
-const FILES = [
-  "./index.html",
-  "./manifest.json",
-  "./icons/tan-apple-touch-icon.png",
-  "./icons/tan-android-chrome-192x192.png",
-  "./icons/tan-android-chrome-512x512.png",
-  "./icons/tan-favicon-32x32.png",
-  "./icons/tan-favicon-16x16.png",
-  "./icons/tan-favicon.ico",
-  "https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap"
-];
-
-self.addEventListener("install", e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(FILES))
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener("fetch", e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
-  );
-});
+{
+  "name": "Timecard Helper",
+  "short_name": "Timecard",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    { "src": "icons/tan-apple-touch-icon.png",       "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/tan-android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/tan-android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

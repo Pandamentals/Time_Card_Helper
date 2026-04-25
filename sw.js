@@ -5,9 +5,12 @@ const FILES = [
   "./icons/tan-apple-touch-icon.png",
   "./icons/tan-android-chrome-192x192.png",
   "./icons/tan-android-chrome-512x512.png",
+  "./icons/tan-favicon-96x96.png",
+  "./icons/tan-favicon-48x48.png",
   "./icons/tan-favicon-32x32.png",
   "./icons/tan-favicon-16x16.png",
   "./icons/tan-favicon.ico",
+  "./icons/tan-ms-icon-144x144.png",
   "https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap"
 ];
 
