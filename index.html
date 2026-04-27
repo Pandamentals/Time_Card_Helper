@@ -277,6 +277,8 @@
   }
   .day-name { font-family: 'VT323', monospace; font-size: 19px; color: #33ff33; letter-spacing: 2px; text-shadow: 0 0 6px #33ff3388; }
 
+  .day-btns { display: flex; gap: 4px; }
+
   .hol-btn {
     font-family: 'Share Tech Mono', monospace;
     font-size: 9px;
@@ -346,6 +348,39 @@
   .pill-over  { color: #ff4422; border-color: #ff442255; text-shadow: 0 0 6px #ff4422; background: #130000; }
   .pill-none  { color: #1a5c1a; border-color: #0f2e0f; background: #000; }
   .pill-hol   { color: #1a6c1a; border-color: #1a5c1a44; background: #000; }
+  .pill-pto   { color: #cc9900; border-color: #cc990055; text-shadow: 0 0 5px #cc990088; background: #0a0800; }
+
+  .pto-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    padding: 3px 7px;
+    border: 1px solid #664400;
+    background: #000;
+    color: #664400;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+  .pto-btn:hover { border-color: #cc990044; color: #cc990066; }
+  .pto-btn.active { background: #0a0800; border-color: #886600; color: #cc9900; box-shadow: 0 0 4px #cc990022; }
+
+  .pto-display {
+    display: none;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: #886600;
+    letter-spacing: 2px;
+    padding: 7px 0 5px;
+    text-align: center;
+    border: 1px dashed #66440055;
+    background: rgba(10,8,0,0.5);
+    margin-bottom: 2px;
+  }
+
+  .day-card.is-pto {
+    border-left-color: #886600;
+    opacity: 0.65;
+  }
 
   .divider { border: none; border-top: 1px solid #1a5c1a; margin: 0.9rem 0; }
 
@@ -516,6 +551,7 @@ const DAYS_CONFIG = [
 ];
 const LUNCH_OPTIONS  = [30, 45, 60];
 const HOLIDAY_HOURS  = 8.0;
+const PTO_HOURS      = 8.25;
 const STORAGE_KEY    = 'timecard_v3';
 const THEME_KEY      = 'timecard_theme';
 
@@ -538,9 +574,13 @@ DAYS_CONFIG.forEach((day, i) => {
   dc.innerHTML = `
     <div class="day-top">
       <span class="day-name">${day.name}</span>
-      <button class="hol-btn" data-day="${i}">[HOL]</button>
+      <div class="day-btns">
+        <button class="hol-btn" data-day="${i}">[HOL]</button>
+        <button class="pto-btn" data-day="${i}">[PTO]</button>
+      </div>
     </div>
     <div class="holiday-display" id="hol-display-${i}">▓ HOLIDAY — 8.00H ▓</div>
+    <div class="pto-display" id="pto-display-${i}">▓ PTO — 8.25H ▓</div>
     <div class="times-row" id="times-${i}">
       <div class="time-group">
         <div class="time-label">Clock in</div>
@@ -577,11 +617,20 @@ function toMin(t) {
 function isHolidayDay(i) {
   return !!document.querySelector(`.hol-btn[data-day="${i}"]`)?.classList.contains('active');
 }
+function isPtoDay(i) {
+  return !!document.querySelector(`.pto-btn[data-day="${i}"]`)?.classList.contains('active');
+}
 function fridayIsHoliday() { return isHolidayDay(4); }
 
 // per-day effective target (accounts for Friday holiday ripple on Mon–Thu)
 function effectiveTarget(i) {
-  if (isHolidayDay(i)) return HOLIDAY_HOURS;
+  if (isPtoDay(i)) return PTO_HOURS;
+  if (isHolidayDay(i)) {
+    // Friday holiday: credit 8H, Mon–Thu ripple balances the week back to 40H
+    if (i === 4) return HOLIDAY_HOURS;
+    // Non-Friday holiday: keep base target so the 0.25H gap registers as a real deficit
+    return DAYS_CONFIG[i].baseTarget;
+  }
   if (i < 4 && fridayIsHoliday()) return 8.00;
   return DAYS_CONFIG[i].baseTarget;
 }
@@ -593,7 +642,23 @@ function weeklyTarget() {
   return t;
 }
 
-// ── HOLIDAY TOGGLE ──
+// ── SHARED HELPER: restore a day to normal (times visible, no holiday/pto) ──
+function clearDayOverride(i) {
+  if (savedTimes[i]) {
+    document.getElementById(`in-${i}`).value  = savedTimes[i].inV;
+    document.getElementById(`out-${i}`).value = savedTimes[i].outV;
+    delete savedTimes[i];
+  }
+  document.getElementById(`times-${i}`).style.display       = '';
+  document.getElementById(`bottom-${i}`).style.display      = '';
+  document.getElementById(`hol-display-${i}`).style.display = 'none';
+  document.getElementById(`pto-display-${i}`).style.display = 'none';
+  document.getElementById(`card-${i}`).classList.remove('is-holiday', 'is-pto');
+  document.querySelector(`.hol-btn[data-day="${i}"]`).classList.remove('active');
+  document.querySelector(`.pto-btn[data-day="${i}"]`).classList.remove('active');
+}
+
+// ── HOLIDAY / PTO TOGGLE ──
 container.addEventListener('click', e => {
   // holiday button
   const holBtn = e.target.closest('.hol-btn');
@@ -602,26 +667,41 @@ container.addEventListener('click', e => {
     const turningOn = !holBtn.classList.contains('active');
 
     if (turningOn) {
+      clearDayOverride(i);   // dismiss PTO if active
       savedTimes[i] = {
         inV:  document.getElementById(`in-${i}`).value,
         outV: document.getElementById(`out-${i}`).value,
       };
-      document.getElementById(`times-${i}`).style.display  = 'none';
-      document.getElementById(`bottom-${i}`).style.display = 'none';
+      document.getElementById(`times-${i}`).style.display       = 'none';
+      document.getElementById(`bottom-${i}`).style.display      = 'none';
       document.getElementById(`hol-display-${i}`).style.display = 'block';
       document.getElementById(`card-${i}`).classList.add('is-holiday');
       holBtn.classList.add('active');
     } else {
-      if (savedTimes[i]) {
-        document.getElementById(`in-${i}`).value  = savedTimes[i].inV;
-        document.getElementById(`out-${i}`).value = savedTimes[i].outV;
-        delete savedTimes[i];
-      }
-      document.getElementById(`times-${i}`).style.display  = '';
-      document.getElementById(`bottom-${i}`).style.display = '';
-      document.getElementById(`hol-display-${i}`).style.display = 'none';
-      document.getElementById(`card-${i}`).classList.remove('is-holiday');
-      holBtn.classList.remove('active');
+      clearDayOverride(i);
+    }
+    saveState(); update(); return;
+  }
+
+  // PTO button
+  const ptoBtn = e.target.closest('.pto-btn');
+  if (ptoBtn) {
+    const i = parseInt(ptoBtn.dataset.day, 10);
+    const turningOn = !ptoBtn.classList.contains('active');
+
+    if (turningOn) {
+      clearDayOverride(i);   // dismiss holiday if active
+      savedTimes[i] = {
+        inV:  document.getElementById(`in-${i}`).value,
+        outV: document.getElementById(`out-${i}`).value,
+      };
+      document.getElementById(`times-${i}`).style.display       = 'none';
+      document.getElementById(`bottom-${i}`).style.display      = 'none';
+      document.getElementById(`pto-display-${i}`).style.display = 'block';
+      document.getElementById(`card-${i}`).classList.add('is-pto');
+      ptoBtn.classList.add('active');
+    } else {
+      clearDayOverride(i);
     }
     saveState(); update(); return;
   }
@@ -653,6 +733,12 @@ function update() {
       total += HOLIDAY_HOURS;
       pill.textContent = '8.00H';
       pill.className   = 'pill pill-hol';
+      return;
+    }
+    if (isPtoDay(i)) {
+      total += PTO_HOURS;
+      pill.textContent = '8.25H';
+      pill.className   = 'pill pill-pto';
       return;
     }
 
@@ -706,12 +792,18 @@ function updateBanner() {
       if (fridayIsHoliday()) {
         lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — TARGET ADJUSTED TO 40H.`);
       } else {
-        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — WEEK IS 0.25H SHORT. MAKE UP TIME.`);
+        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — 8.00H CREDITED. WEEK IS 0.25H SHORT. MAKE UP TIME.`);
       }
+    }
+    if (isPtoDay(i)) {
+      lines.push(`${DAYS_CONFIG[i].name} PTO ACTIVE — 8.25H CREDITED. WEEK ON TARGET.`);
     }
   }
   if (fridayIsHoliday()) {
     lines.push('FRIDAY HOLIDAY ACTIVE — LEAVE AT 17:00 MON–THU');
+  }
+  if (isPtoDay(4)) {
+    lines.push('FRIDAY PTO ACTIVE — 8.25H CREDITED. TARGET ADJUSTED TO 41.25H.');
   }
 
   if (lines.length === 0) {
@@ -731,6 +823,7 @@ function saveState() {
       outV:     document.getElementById(`out-${i}`).value,
       lunch:    parseInt(document.querySelector(`.lunch-btn.active[data-day="${i}"]`)?.dataset.val || DAYS_CONFIG[i].defaultLunch, 10),
       holiday:  isHolidayDay(i),
+      pto:      isPtoDay(i),
       savedIn:  savedTimes[i]?.inV  || null,
       savedOut: savedTimes[i]?.outV || null,
     }))
@@ -759,6 +852,14 @@ function loadState() {
         document.getElementById(`bottom-${i}`).style.display      = 'none';
         document.getElementById(`hol-display-${i}`).style.display = 'block';
         document.getElementById(`card-${i}`).classList.add('is-holiday');
+      } else if (d.pto) {
+        if (d.savedIn !== null) savedTimes[i] = { inV: d.savedIn, outV: d.savedOut };
+        const pb = document.querySelector(`.pto-btn[data-day="${i}"]`);
+        pb.classList.add('active');
+        document.getElementById(`times-${i}`).style.display       = 'none';
+        document.getElementById(`bottom-${i}`).style.display      = 'none';
+        document.getElementById(`pto-display-${i}`).style.display = 'block';
+        document.getElementById(`card-${i}`).classList.add('is-pto');
       }
     });
   } catch(e) { console.warn('State load failed', e); }
@@ -796,12 +897,13 @@ confirmYes.addEventListener('click', () => {
     document.querySelectorAll(`.lunch-btn[data-day="${i}"]`).forEach(b => b.classList.remove('active'));
     const def = document.querySelector(`.lunch-btn[data-day="${i}"][data-val="${day.defaultLunch}"]`);
     if (def) def.classList.add('active');
-    const hb = document.querySelector(`.hol-btn[data-day="${i}"]`);
-    hb.classList.remove('active');
+    document.querySelector(`.hol-btn[data-day="${i}"]`).classList.remove('active');
+    document.querySelector(`.pto-btn[data-day="${i}"]`).classList.remove('active');
     document.getElementById(`times-${i}`).style.display       = '';
     document.getElementById(`bottom-${i}`).style.display      = '';
     document.getElementById(`hol-display-${i}`).style.display = 'none';
-    document.getElementById(`card-${i}`).classList.remove('is-holiday');
+    document.getElementById(`pto-display-${i}`).style.display = 'none';
+    document.getElementById(`card-${i}`).classList.remove('is-holiday', 'is-pto');
   });
   update();
 });
