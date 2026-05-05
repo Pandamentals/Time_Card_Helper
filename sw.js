@@ -1,4 +1,4 @@
-const CACHE = "timecard-v3";
+const CACHE = "timecard-v13";
 const FILES = [
   "./index.html",
   "./manifest.json",
@@ -10,8 +10,7 @@ const FILES = [
   "./icons/tan-favicon-32x32.png",
   "./icons/tan-favicon-16x16.png",
   "./icons/tan-favicon.ico",
-  "./icons/tan-ms-icon-144x144.png",
-  "https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap"
+  "./icons/tan-ms-icon-144x144.png"
 ];
 
 self.addEventListener("install", e => {
