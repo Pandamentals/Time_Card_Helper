@@ -554,7 +554,7 @@
   }
   .day-name { font-family: 'VT323', monospace; font-size: 19px; color: #33ff33; letter-spacing: 2px; text-shadow: 0 0 4px #33ff3355; }
 
-  .day-btns { display: flex; gap: 4px; }
+  .day-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 
   .hol-btn {
     font-family: 'Share Tech Mono', monospace;
@@ -670,6 +670,61 @@
     border-left-color: #886600;
     opacity: 0.65;
   }
+
+  /* ── AWAY BLOCK ── */
+  .away-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    padding: 3px 7px;
+    border: 1px solid #004466;
+    background: #000;
+    color: #004466;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+  .away-btn:hover { border-color: #0088cc44; color: #0088cc66; }
+  .away-btn.active { background: #00080d; border-color: #006699; color: #0099cc; box-shadow: 0 0 4px #0099cc22; }
+
+  .away-block {
+    display: none;
+    margin-bottom: 7px;
+    padding: 7px 9px;
+    border: 1px dashed #00446655;
+    background: rgba(0,8,16,0.6);
+  }
+  .away-block.visible { display: block; }
+
+  .away-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .away-title {
+    font-size: 9px;
+    color: #006699;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .away-clear {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    padding: 1px 5px;
+    border: 1px solid #440000;
+    background: #000;
+    color: #660000;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+  .away-clear:hover { border-color: #ff442244; color: #ff442266; }
+
+  .away-times { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+
+  .pill-inner { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+  .pill-sub { font-size: 11px; color: #0099cc; opacity: 0.85; letter-spacing: 0.5px; margin-top: 1px; }
 
   .divider { border: none; border-top: 1px solid #1a5c1a; margin: 0.9rem 0; }
 
@@ -905,6 +960,7 @@
     .day-name { font-size: 22px; }
     input[type=time] { font-size: 22px; }
     .pill { font-size: 22px; padding: 2px 12px; }
+    .pill-sub { font-size: 12px; }
     .metric-value { font-size: 24px; }
     .banner-line { font-size: 11px; }
     .advice { font-size: 11px; }
@@ -1086,10 +1142,27 @@ DAYS_CONFIG.forEach((day, i) => {
       <div class="day-btns">
         <button class="hol-btn" data-day="${i}">[HOL]</button>
         <button class="pto-btn" data-day="${i}">[PTO]</button>
+        <button class="away-btn" data-day="${i}">[AWAY]</button>
       </div>
     </div>
     <div class="holiday-display" id="hol-display-${i}">▓ HOLIDAY — 8.00H ▓</div>
     <div class="pto-display" id="pto-display-${i}">▓ PTO — ${DAYS_CONFIG[i].baseTarget.toFixed(2)}H ▓</div>
+    <div class="away-block" id="away-block-${i}">
+      <div class="away-header">
+        <span class="away-title">▸ AWAY FROM → TO</span>
+        <button class="away-clear" data-day="${i}">[ × ]</button>
+      </div>
+      <div class="away-times">
+        <div class="time-group">
+          <div class="time-label">Away start</div>
+          <input type="time" id="away-in-${i}" value="">
+        </div>
+        <div class="time-group">
+          <div class="time-label">Away end</div>
+          <input type="time" id="away-out-${i}" value="">
+        </div>
+      </div>
+    </div>
     <div class="times-row" id="times-${i}">
       <div class="time-group">
         <div class="time-label">Clock in</div>
@@ -1129,6 +1202,16 @@ function isHolidayDay(i) {
 function isPtoDay(i) {
   return !!document.querySelector(`.pto-btn[data-day="${i}"]`)?.classList.contains('active');
 }
+function isAwayDay(i) {
+  return !!document.querySelector(`.away-btn[data-day="${i}"]`)?.classList.contains('active');
+}
+function getAwayMins(i) {
+  const awIn  = document.getElementById(`away-in-${i}`).value;
+  const awOut = document.getElementById(`away-out-${i}`).value;
+  if (!awIn || !awOut) return 0;
+  const mins = roundQ(toMin(awOut)) - roundQ(toMin(awIn));
+  return mins > 0 ? mins : 0;
+}
 function fridayIsHoliday() { return isHolidayDay(4); }
 
 // per-day effective target (accounts for Friday holiday ripple on Mon–Thu)
@@ -1163,18 +1246,18 @@ function updateMascot(diff) {
   if (absDiff >= 3) {
     status = 'meltdown';
     text = diff < 0
-      ? ['RED 3H+ SHORT', `${mins} MIN SHORT`]
-      : ['RED 3H+ OVER', `${mins} MIN OVER`];
+      ? ['SHORT 3+', `${mins} MIN SHORT`]
+      : ['OVER 3+', `${mins} MIN OVER`];
   } else if (absDiff >= 2) {
     status = 'stressed';
     text = diff < 0
-      ? ['ORANGE 2H+ SHORT', `${mins} MIN SHORT`]
-      : ['ORANGE 2H+ OVER', `${mins} MIN OVER`];
+      ? ['SHORT 2+', `${mins} MIN SHORT`]
+      : ['OVER 2+', `${mins} MIN OVER`];
   } else if (absDiff >= 1) {
     status = 'worried';
     text = diff < 0
-      ? ['YELLOW 1H+ SHORT', `${mins} MIN SHORT`]
-      : ['YELLOW 1H+ OVER', `${mins} MIN OVER`];
+      ? ['SHORT 1+', `${mins} MIN SHORT`]
+      : ['OVER 1+', `${mins} MIN OVER`];
   }
 
   panel.classList.remove(
@@ -1199,6 +1282,7 @@ function clearDayOverride(i) {
   document.getElementById(`bottom-${i}`).style.display      = '';
   document.getElementById(`hol-display-${i}`).style.display = 'none';
   document.getElementById(`pto-display-${i}`).style.display = 'none';
+  document.getElementById(`away-block-${i}`).style.display  = '';
   document.getElementById(`card-${i}`).classList.remove('is-holiday', 'is-pto');
   document.querySelector(`.hol-btn[data-day="${i}"]`).classList.remove('active');
   document.querySelector(`.pto-btn[data-day="${i}"]`).classList.remove('active');
@@ -1220,6 +1304,7 @@ container.addEventListener('click', e => {
       };
       document.getElementById(`times-${i}`).style.display       = 'none';
       document.getElementById(`bottom-${i}`).style.display      = 'none';
+      document.getElementById(`away-block-${i}`).style.display  = 'none';
       document.getElementById(`hol-display-${i}`).style.display = 'block';
       document.getElementById(`card-${i}`).classList.add('is-holiday');
       holBtn.classList.add('active');
@@ -1243,6 +1328,7 @@ container.addEventListener('click', e => {
       };
       document.getElementById(`times-${i}`).style.display       = 'none';
       document.getElementById(`bottom-${i}`).style.display      = 'none';
+      document.getElementById(`away-block-${i}`).style.display  = 'none';
       document.getElementById(`pto-display-${i}`).style.display = 'block';
       document.getElementById(`card-${i}`).classList.add('is-pto');
       ptoBtn.classList.add('active');
@@ -1259,6 +1345,33 @@ container.addEventListener('click', e => {
     document.querySelectorAll(`.lunch-btn[data-day="${d}"]`).forEach(b => b.classList.remove('active'));
     lunchBtn.classList.add('active');
     saveState(); update();
+  }
+
+  // away button toggle
+  const awayBtn = e.target.closest('.away-btn');
+  if (awayBtn) {
+    const i = parseInt(awayBtn.dataset.day, 10);
+    const turningOn = !awayBtn.classList.contains('active');
+    awayBtn.classList.toggle('active', turningOn);
+    const awayBlock = document.getElementById(`away-block-${i}`);
+    awayBlock.classList.toggle('visible', turningOn);
+    awayBlock.style.display = (turningOn && (isHolidayDay(i) || isPtoDay(i))) ? 'none' : '';
+    if (!turningOn) {
+      document.getElementById(`away-in-${i}`).value  = '';
+      document.getElementById(`away-out-${i}`).value = '';
+    }
+    saveState(); update(); return;
+  }
+
+  // away clear button
+  const awayClr = e.target.closest('.away-clear');
+  if (awayClr) {
+    const i = parseInt(awayClr.dataset.day, 10);
+    document.querySelector(`.away-btn[data-day="${i}"]`).classList.remove('active');
+    document.getElementById(`away-block-${i}`).classList.remove('visible');
+    document.getElementById(`away-in-${i}`).value  = '';
+    document.getElementById(`away-out-${i}`).value = '';
+    saveState(); update(); return;
   }
 });
 
@@ -1291,17 +1404,23 @@ function update() {
 
     const inV  = document.getElementById(`in-${i}`).value;
     const outV = document.getElementById(`out-${i}`).value;
-    if (!inV || !outV) { pill.textContent = '–'; pill.className = 'pill pill-none'; return; }
+    if (!inV || !outV) { pill.innerHTML = '–'; pill.className = 'pill pill-none'; return; }
 
     const activeBtn = document.querySelector(`.lunch-btn.active[data-day="${i}"]`);
-    const lunch  = activeBtn ? parseInt(activeBtn.dataset.val, 10) : day.defaultLunch;
-    const worked = (roundQ(toMin(outV)) - roundQ(toMin(inV)) - lunch) / 60;
-    if (worked <= 0) { pill.textContent = 'ERR'; pill.className = 'pill pill-short'; return; }
+    const lunch     = activeBtn ? parseInt(activeBtn.dataset.val, 10) : day.defaultLunch;
+    const awayMins  = isAwayDay(i) ? getAwayMins(i) : 0;
+    const worked    = (roundQ(toMin(outV)) - roundQ(toMin(inV)) - lunch - awayMins) / 60;
+    if (worked <= 0) { pill.innerHTML = 'ERR'; pill.className = 'pill pill-short'; return; }
     total += worked;
 
-    pill.textContent = worked.toFixed(2) + 'H';
     const delta = worked - eTarget;
     pill.className = 'pill ' + (Math.abs(delta) < 0.01 ? 'pill-ok' : delta < 0 ? 'pill-short' : 'pill-over');
+    if (awayMins > 0) {
+      const awayH = (awayMins / 60).toFixed(2);
+      pill.innerHTML = `<span class="pill-inner"><span>${worked.toFixed(2)}H</span><span class="pill-sub">-${awayH}</span></span>`;
+    } else {
+      pill.innerHTML = worked.toFixed(2) + 'H';
+    }
   });
 
   const diff   = total - wTarget;
@@ -1372,6 +1491,9 @@ function saveState() {
       lunch:    parseInt(document.querySelector(`.lunch-btn.active[data-day="${i}"]`)?.dataset.val || DAYS_CONFIG[i].defaultLunch, 10),
       holiday:  isHolidayDay(i),
       pto:      isPtoDay(i),
+      away:     isAwayDay(i),
+      awayIn:   document.getElementById(`away-in-${i}`).value  || null,
+      awayOut:  document.getElementById(`away-out-${i}`).value || null,
       savedIn:  savedTimes[i]?.inV  || null,
       savedOut: savedTimes[i]?.outV || null,
     }))
@@ -1398,6 +1520,7 @@ function loadState() {
         hb.classList.add('active');
         document.getElementById(`times-${i}`).style.display       = 'none';
         document.getElementById(`bottom-${i}`).style.display      = 'none';
+        document.getElementById(`away-block-${i}`).style.display  = 'none';
         document.getElementById(`hol-display-${i}`).style.display = 'block';
         document.getElementById(`card-${i}`).classList.add('is-holiday');
       } else if (d.pto) {
@@ -1406,8 +1529,19 @@ function loadState() {
         pb.classList.add('active');
         document.getElementById(`times-${i}`).style.display       = 'none';
         document.getElementById(`bottom-${i}`).style.display      = 'none';
+        document.getElementById(`away-block-${i}`).style.display  = 'none';
         document.getElementById(`pto-display-${i}`).style.display = 'block';
         document.getElementById(`card-${i}`).classList.add('is-pto');
+      }
+
+      if (d.away) {
+        const ab = document.querySelector(`.away-btn[data-day="${i}"]`);
+        if (ab) ab.classList.add('active');
+        const awayBlock = document.getElementById(`away-block-${i}`);
+        awayBlock.classList.add('visible');
+        awayBlock.style.display = (d.holiday || d.pto) ? 'none' : '';
+        if (d.awayIn)  document.getElementById(`away-in-${i}`).value  = d.awayIn;
+        if (d.awayOut) document.getElementById(`away-out-${i}`).value = d.awayOut;
       }
     });
   } catch(e) { console.warn('State load failed', e); }
@@ -1447,10 +1581,15 @@ confirmYes.addEventListener('click', () => {
     if (def) def.classList.add('active');
     document.querySelector(`.hol-btn[data-day="${i}"]`).classList.remove('active');
     document.querySelector(`.pto-btn[data-day="${i}"]`).classList.remove('active');
+    document.querySelector(`.away-btn[data-day="${i}"]`).classList.remove('active');
     document.getElementById(`times-${i}`).style.display       = '';
     document.getElementById(`bottom-${i}`).style.display      = '';
     document.getElementById(`hol-display-${i}`).style.display = 'none';
     document.getElementById(`pto-display-${i}`).style.display = 'none';
+    document.getElementById(`away-block-${i}`).style.display  = '';
+    document.getElementById(`away-block-${i}`).classList.remove('visible');
+    document.getElementById(`away-in-${i}`).value             = '';
+    document.getElementById(`away-out-${i}`).value            = '';
     document.getElementById(`card-${i}`).classList.remove('is-holiday', 'is-pto');
   });
   update();
