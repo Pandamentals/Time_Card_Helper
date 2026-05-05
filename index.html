@@ -1219,7 +1219,7 @@ function effectiveTarget(i) {
   if (isPtoDay(i)) return DAYS_CONFIG[i].baseTarget; // PTO credits the day's normal hours (7H on Friday)
   if (isHolidayDay(i)) {
     if (i === 4) return HOLIDAY_HOURS;
-    return DAYS_CONFIG[i].baseTarget;
+    return (i < 4 && fridayIsHoliday()) ? 8.00 : DAYS_CONFIG[i].baseTarget;
   }
   if (i < 4 && fridayIsHoliday()) return 8.00;
   return DAYS_CONFIG[i].baseTarget;
