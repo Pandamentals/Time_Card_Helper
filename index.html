@@ -1356,10 +1356,6 @@ container.addEventListener('click', e => {
     const awayBlock = document.getElementById(`away-block-${i}`);
     awayBlock.classList.toggle('visible', turningOn);
     awayBlock.style.display = (turningOn && (isHolidayDay(i) || isPtoDay(i))) ? 'none' : '';
-    if (!turningOn) {
-      document.getElementById(`away-in-${i}`).value  = '';
-      document.getElementById(`away-out-${i}`).value = '';
-    }
     saveState(); update(); return;
   }
 
