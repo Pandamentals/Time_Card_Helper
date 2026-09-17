@@ -299,7 +299,7 @@
   }
 
   /* ── DEGAUSS WOBBLE ── */
-  .content.degauss { animation: degauss 0.65s ease-out; }
+  .degauss-anim { animation: degauss 0.65s ease-out; }
   @keyframes degauss {
     0%   { transform: scale(1.025, 0.975) skewX(0deg); filter: brightness(1.2); }
     14%  { transform: scale(0.982, 1.018) skewX(-1.4deg); }
@@ -929,15 +929,6 @@
     animation: blink-cursor 0.7s step-start infinite;
   }
   @keyframes blink-cursor { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-  @keyframes power-flash {
-    0%  { opacity: 0; filter: brightness(5) contrast(0.5); }
-    15% { opacity: 0.9; }
-    30% { opacity: 0.12; transform: translateX(1px) skewX(1deg); }
-    50% { opacity: 0.85; transform: translateX(-1px) skewX(-1deg); }
-    70% { opacity: 0.35; }
-    100% { opacity: 1; filter: brightness(1) contrast(1); transform: none; }
-  }
-  #boot-overlay.powering-on { animation: power-flash 0.25s ease-out forwards; }
 
   /* ── THEME-SWITCH BLINK (soft flicker, layered on top of the bezel crossfade) ── */
   #theme-flash {
@@ -1697,12 +1688,12 @@ function todayStr() {
 function shouldShowBoot() { return localStorage.getItem(BOOT_KEY) !== todayStr(); }
 function markBootShown()  { localStorage.setItem(BOOT_KEY, todayStr()); }
 
-function runDegauss() {
-  const contentEl = document.querySelector('.content');
-  contentEl.classList.remove('degauss');
-  void contentEl.offsetWidth;
-  contentEl.classList.add('degauss');
-  contentEl.addEventListener('animationend', () => contentEl.classList.remove('degauss'), { once: true });
+function runDegauss(el) {
+  el = el || document.querySelector('.content');
+  el.classList.remove('degauss-anim');
+  void el.offsetWidth; // restart animation if triggered again mid-run
+  el.classList.add('degauss-anim');
+  el.addEventListener('animationend', () => el.classList.remove('degauss-anim'), { once: true });
 }
 
 function runBootSequence(onComplete) {
@@ -1722,9 +1713,13 @@ function runBootSequence(onComplete) {
   ];
   const timings = [80, 230, 410, 580, 750, 900, 1000, 1100, 1320];
 
+  // cold power-on: raster snaps in as a bright line and unrolls (boot-tube-flash,
+  // ~680ms via the overlay's own ::after), then the auto-degauss thunk fires as it
+  // settles, and only once the picture is stable does POST text start printing —
+  // matches how a real CRT wakes up before anything is legible on screen.
+  const TEXT_OFFSET = 850;
   overlay.classList.remove('hidden');
-  overlay.classList.add('powering-on');
-  setTimeout(() => overlay.classList.remove('powering-on'), 260);
+  setTimeout(() => runDegauss(overlay), 480);
 
   lines.forEach((line, i) => {
     const el = document.createElement('div');
@@ -1743,7 +1738,7 @@ function runBootSequence(onComplete) {
     }
     linesEl.appendChild(el);
     if (line.type !== 'gap') {
-      setTimeout(() => el.classList.add('visible'), timings[i]);
+      setTimeout(() => el.classList.add('visible'), TEXT_OFFSET + timings[i]);
     }
   });
 
@@ -1808,7 +1803,7 @@ function runBootSequence(onComplete) {
       }, 910);
 
     }, 290);
-  }, 1750);
+  }, TEXT_OFFSET + 1750);
 }
 
 // ── INIT ──
