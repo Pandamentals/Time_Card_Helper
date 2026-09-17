@@ -634,7 +634,7 @@
   .pill { font-family: 'VT323', monospace; font-size: 19px; padding: 1px 9px; letter-spacing: 1px; border: 1px solid; }
   .pill-ok    { color: #ffffff; border-color: #ffffff55; text-shadow: 0 0 6px #fff; background: #001a00; }
   .pill-short { color: #ff4422; border-color: #ff442255; text-shadow: 0 0 6px #ff4422; background: #130000; }
-  .pill-over  { color: #ff4422; border-color: #ff442255; text-shadow: 0 0 6px #ff4422; background: #130000; }
+  .pill-over  { color: #ffaa00; border-color: #ffaa0055; text-shadow: 0 0 6px #ffaa00; background: #140d00; }
   .pill-none  { color: #1a5c1a; border-color: #0f2e0f; background: #000; }
   .pill-hol   { color: #1a6c1a; border-color: #1a5c1a44; background: #000; }
   .pill-pto   { color: #cc9900; border-color: #cc990055; text-shadow: 0 0 5px #cc990088; background: #0a0800; }
@@ -733,7 +733,8 @@
   .metric-label { font-size: 9px; color: #1a8c1a; margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; }
   .metric-value { font-family: 'VT323', monospace; font-size: 21px; color: #33ff33; text-shadow: 0 0 5px #33ff3366; letter-spacing: 1px; }
   .metric-value.good { color: #ffffff; text-shadow: 0 0 8px #ffffffaa; }
-  .metric-value.bad  { color: #ff4422; text-shadow: 0 0 8px #ff442299; }
+  .metric-value.bad-short { color: #ff4422; text-shadow: 0 0 8px #ff442299; }
+  .metric-value.bad-over  { color: #ffaa00; text-shadow: 0 0 8px #ffaa0099; }
   .metric-sub { font-size: 9px; color: #1a8c1a; margin-top: 2px; letter-spacing: 0.5px; }
 
   .advice {
@@ -748,7 +749,8 @@
   }
   .prompt { color: #33ff33; }
   .advice-text { color: #33ff33; }
-  .advice-text.warn { color: #ff4422; }
+  .advice-text.warn-short { color: #ff4422; }
+  .advice-text.warn-over  { color: #ffaa00; }
   .advice-text.good { color: #ffffff; }
 
   /* ── RESET ── */
@@ -1130,8 +1132,8 @@ const container = document.getElementById('rows');
 DAYS_CONFIG.forEach((day, i) => {
   const btns = LUNCH_OPTIONS.map(m => {
     const label  = m === 60 ? '1H' : `${m}M`;
-    const active = m === day.defaultLunch ? ' active' : '';
-    return `<button class="lunch-btn${active}" data-day="${i}" data-val="${m}">${label}</button>`;
+    const active = m === day.defaultLunch;
+    return `<button class="lunch-btn${active ? ' active' : ''}" data-day="${i}" data-val="${m}" aria-pressed="${active}" title="Set lunch break to ${label}">${label}</button>`;
   }).join('');
 
   const dc = document.createElement('div');
@@ -1141,9 +1143,9 @@ DAYS_CONFIG.forEach((day, i) => {
     <div class="day-top">
       <span class="day-name">${day.name}</span>
       <div class="day-btns">
-        <button class="hol-btn" data-day="${i}">[HOL]</button>
-        <button class="pto-btn" data-day="${i}">[PTO]</button>
-        <button class="away-btn" data-day="${i}">[AWAY]</button>
+        <button class="hol-btn" data-day="${i}" aria-pressed="false" title="Mark as a paid holiday — credits 8.00H, hides clock in/out">[HOL]</button>
+        <button class="pto-btn" data-day="${i}" aria-pressed="false" title="Mark as PTO — credits your normal hours for this day">[PTO]</button>
+        <button class="away-btn" data-day="${i}" aria-pressed="false" title="Block out an away period (e.g. appointment) — subtracted from hours worked">[AWAY]</button>
       </div>
     </div>
     <div class="holiday-display" id="hol-display-${i}">▓ HOLIDAY — 8.00H ▓</div>
@@ -1151,26 +1153,26 @@ DAYS_CONFIG.forEach((day, i) => {
     <div class="away-block" id="away-block-${i}">
       <div class="away-header">
         <span class="away-title">▸ AWAY FROM → TO</span>
-        <button class="away-clear" data-day="${i}">[ × ]</button>
+        <button class="away-clear" data-day="${i}" title="Clear away period">[ × ]</button>
       </div>
       <div class="away-times">
         <div class="time-group">
-          <div class="time-label">Away start</div>
+          <label class="time-label" for="away-in-${i}">Away start</label>
           <input type="time" id="away-in-${i}" value="">
         </div>
         <div class="time-group">
-          <div class="time-label">Away end</div>
+          <label class="time-label" for="away-out-${i}">Away end</label>
           <input type="time" id="away-out-${i}" value="">
         </div>
       </div>
     </div>
     <div class="times-row" id="times-${i}">
       <div class="time-group">
-        <div class="time-label">Clock in</div>
+        <label class="time-label" for="in-${i}">Clock in</label>
         <input type="time" id="in-${i}" value="${day.defaultIn}">
       </div>
       <div class="time-group">
-        <div class="time-label">Clock out</div>
+        <label class="time-label" for="out-${i}">Clock out</label>
         <input type="time" id="out-${i}" value="${day.defaultOut}">
       </div>
     </div>
@@ -1214,6 +1216,11 @@ function getAwayMins(i) {
   return mins > 0 ? mins : 0;
 }
 function fridayIsHoliday() { return isHolidayDay(4); }
+function setPressed(el, active) {
+  if (!el) return;
+  el.classList.toggle('active', active);
+  el.setAttribute('aria-pressed', String(active));
+}
 
 // per-day effective target (accounts for Friday holiday ripple on Mon–Thu)
 function effectiveTarget(i) {
@@ -1285,8 +1292,8 @@ function clearDayOverride(i) {
   document.getElementById(`pto-display-${i}`).style.display = 'none';
   document.getElementById(`away-block-${i}`).style.display  = '';
   document.getElementById(`card-${i}`).classList.remove('is-holiday', 'is-pto');
-  document.querySelector(`.hol-btn[data-day="${i}"]`).classList.remove('active');
-  document.querySelector(`.pto-btn[data-day="${i}"]`).classList.remove('active');
+  setPressed(document.querySelector(`.hol-btn[data-day="${i}"]`), false);
+  setPressed(document.querySelector(`.pto-btn[data-day="${i}"]`), false);
 }
 
 // ── HOLIDAY / PTO TOGGLE ──
@@ -1308,7 +1315,7 @@ container.addEventListener('click', e => {
       document.getElementById(`away-block-${i}`).style.display  = 'none';
       document.getElementById(`hol-display-${i}`).style.display = 'block';
       document.getElementById(`card-${i}`).classList.add('is-holiday');
-      holBtn.classList.add('active');
+      setPressed(holBtn, true);
     } else {
       clearDayOverride(i);
     }
@@ -1332,7 +1339,7 @@ container.addEventListener('click', e => {
       document.getElementById(`away-block-${i}`).style.display  = 'none';
       document.getElementById(`pto-display-${i}`).style.display = 'block';
       document.getElementById(`card-${i}`).classList.add('is-pto');
-      ptoBtn.classList.add('active');
+      setPressed(ptoBtn, true);
     } else {
       clearDayOverride(i);
     }
@@ -1343,8 +1350,8 @@ container.addEventListener('click', e => {
   const lunchBtn = e.target.closest('.lunch-btn');
   if (lunchBtn) {
     const d = lunchBtn.dataset.day;
-    document.querySelectorAll(`.lunch-btn[data-day="${d}"]`).forEach(b => b.classList.remove('active'));
-    lunchBtn.classList.add('active');
+    document.querySelectorAll(`.lunch-btn[data-day="${d}"]`).forEach(b => setPressed(b, false));
+    setPressed(lunchBtn, true);
     saveState(); update();
   }
 
@@ -1353,7 +1360,7 @@ container.addEventListener('click', e => {
   if (awayBtn) {
     const i = parseInt(awayBtn.dataset.day, 10);
     const turningOn = !awayBtn.classList.contains('active');
-    awayBtn.classList.toggle('active', turningOn);
+    setPressed(awayBtn, turningOn);
     const awayBlock = document.getElementById(`away-block-${i}`);
     awayBlock.classList.toggle('visible', turningOn);
     awayBlock.style.display = (turningOn && (isHolidayDay(i) || isPtoDay(i))) ? 'none' : '';
@@ -1364,7 +1371,7 @@ container.addEventListener('click', e => {
   const awayClr = e.target.closest('.away-clear');
   if (awayClr) {
     const i = parseInt(awayClr.dataset.day, 10);
-    document.querySelector(`.away-btn[data-day="${i}"]`).classList.remove('active');
+    setPressed(document.querySelector(`.away-btn[data-day="${i}"]`), false);
     document.getElementById(`away-block-${i}`).classList.remove('visible');
     document.getElementById(`away-in-${i}`).value  = '';
     document.getElementById(`away-out-${i}`).value = '';
@@ -1432,14 +1439,14 @@ function update() {
     advEl.innerHTML    = '<span class="prompt">&gt; </span><span class="advice-text good">STATUS: TARGET REACHED. NOTHING TO MAKE UP.</span>';
   } else if (diff < 0) {
     const mins = Math.round(Math.abs(diff) * 60);
-    diffEl.textContent = '-' + Math.abs(diff).toFixed(2) + 'H'; diffEl.className = 'metric-value bad';
+    diffEl.textContent = '-' + Math.abs(diff).toFixed(2) + 'H'; diffEl.className = 'metric-value bad-short';
     subEl.textContent  = mins + ' MIN SHORT';
-    advEl.innerHTML    = `<span class="prompt">&gt; </span><span class="advice-text warn">MAKE UP ${mins} MIN (${Math.abs(diff).toFixed(2)}H). CLOCK IN EARLIER OR STAY LATER.</span>`;
+    advEl.innerHTML    = `<span class="prompt">&gt; </span><span class="advice-text warn-short">MAKE UP ${mins} MIN (${Math.abs(diff).toFixed(2)}H). CLOCK IN EARLIER OR STAY LATER.</span>`;
   } else {
     const mins = Math.round(diff * 60);
-    diffEl.textContent = '+' + diff.toFixed(2) + 'H'; diffEl.className = 'metric-value bad';
+    diffEl.textContent = '+' + diff.toFixed(2) + 'H'; diffEl.className = 'metric-value bad-over';
     subEl.textContent  = mins + ' MIN OVER';
-    advEl.innerHTML    = `<span class="prompt">&gt; </span><span class="advice-text warn">WARNING: ${mins} MIN OVER TARGET. LEAVE EARLY TO COMPENSATE.</span>`;
+    advEl.innerHTML    = `<span class="prompt">&gt; </span><span class="advice-text warn-over">WARNING: ${mins} MIN OVER TARGET. LEAVE EARLY TO COMPENSATE.</span>`;
   }
 
   updateMascot(diff);
@@ -1481,21 +1488,23 @@ function updateBanner() {
 
 // ── LOCAL STORAGE ──
 function saveState() {
-  const state = {
-    days: DAYS_CONFIG.map((_, i) => ({
-      inV:      document.getElementById(`in-${i}`).value,
-      outV:     document.getElementById(`out-${i}`).value,
-      lunch:    parseInt(document.querySelector(`.lunch-btn.active[data-day="${i}"]`)?.dataset.val || DAYS_CONFIG[i].defaultLunch, 10),
-      holiday:  isHolidayDay(i),
-      pto:      isPtoDay(i),
-      away:     isAwayDay(i),
-      awayIn:   document.getElementById(`away-in-${i}`).value  || null,
-      awayOut:  document.getElementById(`away-out-${i}`).value || null,
-      savedIn:  savedTimes[i]?.inV  || null,
-      savedOut: savedTimes[i]?.outV || null,
-    }))
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    const state = {
+      days: DAYS_CONFIG.map((_, i) => ({
+        inV:      document.getElementById(`in-${i}`).value,
+        outV:     document.getElementById(`out-${i}`).value,
+        lunch:    parseInt(document.querySelector(`.lunch-btn.active[data-day="${i}"]`)?.dataset.val || DAYS_CONFIG[i].defaultLunch, 10),
+        holiday:  isHolidayDay(i),
+        pto:      isPtoDay(i),
+        away:     isAwayDay(i),
+        awayIn:   document.getElementById(`away-in-${i}`).value  || null,
+        awayOut:  document.getElementById(`away-out-${i}`).value || null,
+        savedIn:  savedTimes[i]?.inV  || null,
+        savedOut: savedTimes[i]?.outV || null,
+      }))
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) { console.warn('State save failed', e); }
 }
 
 function loadState() {
@@ -1507,14 +1516,14 @@ function loadState() {
       document.getElementById(`in-${i}`).value  = d.inV  || DAYS_CONFIG[i].defaultIn;
       document.getElementById(`out-${i}`).value = d.outV || DAYS_CONFIG[i].defaultOut;
 
-      document.querySelectorAll(`.lunch-btn[data-day="${i}"]`).forEach(b => b.classList.remove('active'));
+      document.querySelectorAll(`.lunch-btn[data-day="${i}"]`).forEach(b => setPressed(b, false));
       const lb = document.querySelector(`.lunch-btn[data-day="${i}"][data-val="${d.lunch}"]`);
-      if (lb) lb.classList.add('active');
+      setPressed(lb, true);
 
       if (d.holiday) {
         if (d.savedIn !== null) savedTimes[i] = { inV: d.savedIn, outV: d.savedOut };
         const hb = document.querySelector(`.hol-btn[data-day="${i}"]`);
-        hb.classList.add('active');
+        setPressed(hb, true);
         document.getElementById(`times-${i}`).style.display       = 'none';
         document.getElementById(`bottom-${i}`).style.display      = 'none';
         document.getElementById(`away-block-${i}`).style.display  = 'none';
@@ -1523,7 +1532,7 @@ function loadState() {
       } else if (d.pto) {
         if (d.savedIn !== null) savedTimes[i] = { inV: d.savedIn, outV: d.savedOut };
         const pb = document.querySelector(`.pto-btn[data-day="${i}"]`);
-        pb.classList.add('active');
+        setPressed(pb, true);
         document.getElementById(`times-${i}`).style.display       = 'none';
         document.getElementById(`bottom-${i}`).style.display      = 'none';
         document.getElementById(`away-block-${i}`).style.display  = 'none';
@@ -1533,7 +1542,7 @@ function loadState() {
 
       if (d.away) {
         const ab = document.querySelector(`.away-btn[data-day="${i}"]`);
-        if (ab) ab.classList.add('active');
+        setPressed(ab, true);
         const awayBlock = document.getElementById(`away-block-${i}`);
         awayBlock.classList.add('visible');
         awayBlock.style.display = (d.holiday || d.pto) ? 'none' : '';
@@ -1573,12 +1582,12 @@ confirmYes.addEventListener('click', () => {
   DAYS_CONFIG.forEach((day, i) => {
     document.getElementById(`in-${i}`).value  = day.defaultIn;
     document.getElementById(`out-${i}`).value = day.defaultOut;
-    document.querySelectorAll(`.lunch-btn[data-day="${i}"]`).forEach(b => b.classList.remove('active'));
+    document.querySelectorAll(`.lunch-btn[data-day="${i}"]`).forEach(b => setPressed(b, false));
     const def = document.querySelector(`.lunch-btn[data-day="${i}"][data-val="${day.defaultLunch}"]`);
-    if (def) def.classList.add('active');
-    document.querySelector(`.hol-btn[data-day="${i}"]`).classList.remove('active');
-    document.querySelector(`.pto-btn[data-day="${i}"]`).classList.remove('active');
-    document.querySelector(`.away-btn[data-day="${i}"]`).classList.remove('active');
+    setPressed(def, true);
+    setPressed(document.querySelector(`.hol-btn[data-day="${i}"]`), false);
+    setPressed(document.querySelector(`.pto-btn[data-day="${i}"]`), false);
+    setPressed(document.querySelector(`.away-btn[data-day="${i}"]`), false);
     document.getElementById(`times-${i}`).style.display       = '';
     document.getElementById(`bottom-${i}`).style.display      = '';
     document.getElementById(`hol-display-${i}`).style.display = 'none';
