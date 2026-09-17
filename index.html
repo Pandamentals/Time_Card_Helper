@@ -939,17 +939,22 @@
   }
   #boot-overlay.powering-on { animation: power-flash 0.25s ease-out forwards; }
 
-  /* ── THEME-SWITCH BLINK ── */
+  /* ── THEME-SWITCH BLINK (soft flicker, layered on top of the bezel crossfade) ── */
   #theme-flash {
     position: absolute;
     inset: 0;
-    background: #020e02;
+    background: rgba(2,14,2,0.55);
     border-radius: 12px;
     z-index: 99;
     pointer-events: none;
     opacity: 0;
   }
-  #theme-flash.flashing { animation: power-flash 0.25s ease-out forwards; }
+  #theme-flash.flashing { animation: theme-blink 0.22s ease-out; }
+  @keyframes theme-blink {
+    0%   { opacity: 0; }
+    30%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
   @keyframes crt-collapse {
     0%   { transform: scaleY(1);    filter: brightness(1); }
     70%  { transform: scaleY(0.06); filter: brightness(2.5); }
