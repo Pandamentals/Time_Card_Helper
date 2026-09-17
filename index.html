@@ -421,14 +421,35 @@
     --mascot-dim: #b51f18;
     --mascot-core: #ff513d;
   }
+  .mascot-status-over-mild {
+    --mascot-glow: #ffcc33;
+    --mascot-dim: #b8901f;
+    --mascot-core: #ffe070;
+  }
+  .mascot-status-over-high {
+    --mascot-glow: #ffaa00;
+    --mascot-dim: #c07d00;
+    --mascot-core: #ffc133;
+  }
+  .mascot-status-over-extreme {
+    --mascot-glow: #ff8800;
+    --mascot-dim: #c06200;
+    --mascot-core: #ffa033;
+  }
   .mascot-status-good .mouth-happy,
   .mascot-status-worried .mouth-worried,
   .mascot-status-stressed .mouth-stressed,
-  .mascot-status-meltdown .mouth-meltdown { opacity: 1; }
+  .mascot-status-meltdown .mouth-meltdown,
+  .mascot-status-over-mild .mouth-over,
+  .mascot-status-over-high .mouth-over,
+  .mascot-status-over-extreme .mouth-over { opacity: 1; }
   .mascot-status-good .mascot-eye { transform: translateY(1px) scaleX(1.04); }
   .mascot-status-worried .mascot-eye { transform: translateY(-0.5px) scaleY(1.08); }
   .mascot-status-stressed .mascot-eye { transform: translateY(-1px) scaleX(0.84) scaleY(1.18); }
   .mascot-status-meltdown .mascot-eye { transform: translateY(-1.5px) scaleX(0.72) scaleY(1.28); }
+  .mascot-status-over-mild .mascot-eye,
+  .mascot-status-over-high .mascot-eye,
+  .mascot-status-over-extreme .mascot-eye { transform: translateY(1.5px) scaleX(1.06) scaleY(0.9); }
   .mascot-status-good .brow-left { transform: translate(-1px,1px) rotate(-5deg); }
   .mascot-status-good .brow-right { transform: translate(1px,1px) rotate(5deg); }
   .mascot-status-worried .brow-left { transform: translate(1px,2px) rotate(-8deg); }
@@ -437,6 +458,12 @@
   .mascot-status-stressed .brow-right { transform: translate(-2px,3px) rotate(13deg); }
   .mascot-status-meltdown .brow-left { transform: translate(3px,4px) rotate(-18deg); }
   .mascot-status-meltdown .brow-right { transform: translate(-3px,4px) rotate(18deg); }
+  .mascot-status-over-mild .brow-left,
+  .mascot-status-over-high .brow-left,
+  .mascot-status-over-extreme .brow-left { transform: translate(-1px,0px) rotate(-4deg); }
+  .mascot-status-over-mild .brow-right,
+  .mascot-status-over-high .brow-right,
+  .mascot-status-over-extreme .brow-right { transform: translate(1px,0px) rotate(4deg); }
   .mascot-status-worried .time-mascot {
     animation:
       mascot-worry 1.9s ease-in-out infinite,
@@ -451,6 +478,12 @@
     animation:
       mascot-meltdown 0.22s steps(2) infinite,
       mascot-breathe 3.4s ease-in-out infinite;
+  }
+  .mascot-status-over-high .time-mascot,
+  .mascot-status-over-extreme .time-mascot {
+    animation:
+      mascot-idle 2.2s ease-in-out infinite,
+      mascot-breathe 2.6s ease-in-out infinite;
   }
   .mascot-status-worried .mascot-hand { animation: hand-worry 1.4s ease-in-out infinite; }
   .mascot-status-stressed .mascot-hand,
@@ -1055,6 +1088,7 @@
           <path class="mascot-face mascot-mouth mouth-worried" d="M60 99c6-5 24-5 30 0"/>
           <path class="mascot-face mascot-mouth mouth-stressed" d="M61 96c8 2 20 2 28 0"/>
           <path class="mascot-face mascot-mouth mouth-meltdown" d="M60 101c5-6 10 5 15-1s10 5 15-1"/>
+          <path class="mascot-face mascot-mouth mouth-over" d="M60 95c6 5 12 7 15 7s9-2 15-7"/>
           <g class="mascot-hand">
             <path class="mascot-line" d="M6 124c5-11 23-9 27 1 4 11-11 17-22 11-4-2-6-6-5-12z"/>
             <path class="mascot-detail" d="M13 122c-1 5 0 10 4 14M20 121c-1 6 1 11 5 14M27 123c0 5-1 8-4 11"/>
@@ -1251,28 +1285,26 @@ function updateMascot(diff) {
   let status = 'good';
   let text = ['TARGET LOCKED', 'WEEKLY DIFF IS STABLE'];
 
-  if (absDiff >= 3) {
-    status = 'meltdown';
-    text = diff < 0
-      ? ['SHORT 3+', `${mins} MIN SHORT`]
-      : ['OVER 3+', `${mins} MIN OVER`];
-  } else if (absDiff >= 2) {
-    status = 'stressed';
-    text = diff < 0
-      ? ['SHORT 2+', `${mins} MIN SHORT`]
-      : ['OVER 2+', `${mins} MIN OVER`];
-  } else if (absDiff >= 1) {
-    status = 'worried';
-    text = diff < 0
-      ? ['SHORT 1+', `${mins} MIN SHORT`]
-      : ['OVER 1+', `${mins} MIN OVER`];
+  if (diff < 0) {
+    // falling behind — anxious ramp
+    if (absDiff >= 3) { status = 'meltdown'; text = ['SHORT 3+', `${mins} MIN SHORT`]; }
+    else if (absDiff >= 2) { status = 'stressed'; text = ['SHORT 2+', `${mins} MIN SHORT`]; }
+    else if (absDiff >= 1) { status = 'worried'; text = ['SHORT 1+', `${mins} MIN SHORT`]; }
+  } else if (diff > 0) {
+    // ahead of target — pleased, not distressed
+    if (absDiff >= 3) { status = 'over-extreme'; text = ['OVER 3+', `${mins} MIN OVER`]; }
+    else if (absDiff >= 2) { status = 'over-high'; text = ['OVER 2+', `${mins} MIN OVER`]; }
+    else if (absDiff >= 1) { status = 'over-mild'; text = ['OVER 1+', `${mins} MIN OVER`]; }
   }
 
   panel.classList.remove(
     'mascot-status-good',
     'mascot-status-worried',
     'mascot-status-stressed',
-    'mascot-status-meltdown'
+    'mascot-status-meltdown',
+    'mascot-status-over-mild',
+    'mascot-status-over-high',
+    'mascot-status-over-extreme'
   );
   panel.classList.add(`mascot-status-${status}`);
   lineA.textContent = text[0];
