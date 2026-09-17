@@ -298,6 +298,19 @@
     animation: phosphor-drift 7s ease-in-out infinite;
   }
 
+  /* ── DEGAUSS WOBBLE ── */
+  .content.degauss { animation: degauss 0.65s ease-out; }
+  @keyframes degauss {
+    0%   { transform: scale(1.025, 0.975) skewX(0deg); filter: brightness(1.2); }
+    14%  { transform: scale(0.982, 1.018) skewX(-1.4deg); }
+    28%  { transform: scale(1.015, 0.99) skewX(1.1deg); }
+    42%  { transform: scale(0.994, 1.008) skewX(-0.7deg); }
+    56%  { transform: scale(1.006, 0.996) skewX(0.4deg); }
+    70%  { transform: scale(0.998, 1.003) skewX(-0.2deg); }
+    85%  { transform: scale(1.002, 0.999) skewX(0.08deg); }
+    100% { transform: scale(1,1) skewX(0deg); filter: brightness(1); }
+  }
+
   @keyframes phosphor-drift {
     0%,100% { transform: translateX(0); }
     48% { transform: translateX(0); }
@@ -925,6 +938,18 @@
     100% { opacity: 1; filter: brightness(1) contrast(1); transform: none; }
   }
   #boot-overlay.powering-on { animation: power-flash 0.25s ease-out forwards; }
+
+  /* ── THEME-SWITCH BLINK ── */
+  #theme-flash {
+    position: absolute;
+    inset: 0;
+    background: #020e02;
+    border-radius: 12px;
+    z-index: 99;
+    pointer-events: none;
+    opacity: 0;
+  }
+  #theme-flash.flashing { animation: power-flash 0.25s ease-out forwards; }
   @keyframes crt-collapse {
     0%   { transform: scaleY(1);    filter: brightness(1); }
     70%  { transform: scaleY(0.06); filter: brightness(2.5); }
@@ -1037,6 +1062,7 @@
       <div class="boot-lines" id="boot-lines"></div>
     </div>
     <div id="boot-scanline"></div>
+    <div id="theme-flash"></div>
     <div class="scanlines"></div>
     <div class="flicker"></div>
     <div class="screen-noise"></div>
@@ -1643,8 +1669,17 @@ function applyTheme(theme) {
   localStorage.setItem(THEME_KEY, theme);
 }
 
+function themeBlink(theme) {
+  const flash = document.getElementById('theme-flash');
+  flash.classList.remove('flashing');
+  void flash.offsetWidth; // restart animation if clicked again mid-flash
+  flash.classList.add('flashing');
+  applyTheme(theme);
+  setTimeout(() => flash.classList.remove('flashing'), 260);
+}
+
 themeToggle.addEventListener('click', () => {
-  applyTheme(monitor.classList.contains('theme-dark') ? 'tan' : 'dark');
+  themeBlink(monitor.classList.contains('theme-dark') ? 'tan' : 'dark');
 });
 
 // ── BOOT SCREEN ──
@@ -1656,6 +1691,14 @@ function todayStr() {
 }
 function shouldShowBoot() { return localStorage.getItem(BOOT_KEY) !== todayStr(); }
 function markBootShown()  { localStorage.setItem(BOOT_KEY, todayStr()); }
+
+function runDegauss() {
+  const contentEl = document.querySelector('.content');
+  contentEl.classList.remove('degauss');
+  void contentEl.offsetWidth;
+  contentEl.classList.add('degauss');
+  contentEl.addEventListener('animationend', () => contentEl.classList.remove('degauss'), { once: true });
+}
 
 function runBootSequence(onComplete) {
   const overlay = document.getElementById('boot-overlay');
@@ -1751,6 +1794,7 @@ function runBootSequence(onComplete) {
             scanline.classList.remove('sweeping');
             scanline.style.top = '';
             contentEl.style.transform = '';
+            runDegauss();
             onComplete();
           }
         }
@@ -1774,6 +1818,8 @@ if (shouldShowBoot()) {
   markBootShown();
   document.querySelector('.content').classList.add('boot-hidden');
   runBootSequence(() => {});
+} else {
+  runDegauss();
 }
 
 </script>
