@@ -1,0 +1,11 @@
+{
+  "name": "timecard-helper-tests",
+  "private": true,
+  "description": "Browser tests for Timecard Helper (open index.html in headless Chromium)",
+  "scripts": {
+    "test": "node run-all.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}
