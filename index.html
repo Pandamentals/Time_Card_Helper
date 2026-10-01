@@ -1155,13 +1155,26 @@
     text-decoration: none;
   }
   .p-chips a:hover { border-color: #33ff3355; color: #33ff33; }
+  .p-chips a.on { border-color: #33ff33; color: #33ff33; background: #001a00; box-shadow: 0 0 6px #33ff3333; }
+  .p-chips a.alt { border-color: #886600; color: #ffaa00; }
   .p-chips a:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
 
-  .p-month { border: 1px solid #164416; border-left: 2px solid #249724; background: rgba(0,18,0,0.42); padding: 9px 10px 10px; scroll-margin-top: 12px; }
-  .p-mhead { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 12px; margin-bottom: 7px; flex-wrap: wrap; }
-  .p-mhead h2 { font-family: 'VT323', monospace; font-weight: normal; font-size: 21px; color: #33ff33; letter-spacing: 2px; text-shadow: 0 0 4px #33ff3355; }
+  .p-month { border: 1px solid #164416; border-left: 2px solid #249724; background: rgba(0,18,0,0.42); scroll-margin-top: 12px; }
+  .p-month.open { border-left-color: #33ff33; box-shadow: 0 0 10px #33ff3318; }
+  .p-mhead {
+    display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 12px;
+    width: 100%; margin: 0; padding: 9px 10px;
+    border: 0; background: none; color: inherit; font: inherit; text-align: left; text-shadow: inherit; cursor: pointer;
+  }
+  .p-month.open .p-mhead { padding-bottom: 6px; }
+  .p-mhead:hover .p-mname { text-shadow: 0 0 8px #33ff3388; }
+  .p-mhead:focus-visible { outline: 1px solid #33ff33; outline-offset: -3px; }
+  .p-mname { font-family: 'VT323', monospace; font-size: 21px; color: #33ff33; letter-spacing: 2px; text-shadow: 0 0 4px #33ff3355; }
+  .p-mname::before { content: '▸ '; color: #1a8c1a; }
+  .p-month.open .p-mname::before { content: '▾ '; color: #33ff33; }
   .p-mb { font-size: 10px; color: #1a8c1a; letter-spacing: 0.5px; white-space: nowrap; margin-left: auto; padding-right: 2px; }
-  .p-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+  .p-mb.neg { color: #ff4422; text-shadow: 0 0 5px #ff442255; }
+  .p-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; margin: 0 10px 10px; }
   .p-dow { font-size: 9px; color: #1a8c1a; text-align: center; letter-spacing: 1px; padding-bottom: 2px; }
   .p-day {
     position: relative;
@@ -1324,10 +1337,10 @@
     .p-flow { font-size: 18px; gap: 6px; letter-spacing: 0; }
     .tab { font-size: 16px; padding: 2px 8px 1px; letter-spacing: 1px; }
     .week-label { flex-basis: 100%; margin-left: 0; }
-    .p-month { padding: 8px 7px 9px; }
-    .p-mhead h2 { font-size: 18px; letter-spacing: 1px; }
+    .p-mhead { padding: 8px 7px; }
+    .p-mname { font-size: 18px; letter-spacing: 1px; }
     .p-mb { font-size: 9px; letter-spacing: 0; }
-    .p-grid { gap: 2px; }
+    .p-grid { gap: 2px; margin: 0 7px 9px; }
     .p-day { min-height: 46px; padding: 2px 3px; }
     .p-dn { font-size: 15px; }
     .p-tag { font-size: 8px; letter-spacing: 0; }
@@ -1512,6 +1525,7 @@ window.PTO = (() => {
   if (!S.su && S.start != null) S.su = 1;
 
   let openKey = null, confirmReset = false;
+  let openMonth = null;   // 'YYYY-MM' of the expanded month; '' = all collapsed; null = pick the default (current month)
   const host = document.getElementById('view-pto');
   const sheetRoot = document.createElement('div');
   document.body.appendChild(sheetRoot);
@@ -1732,14 +1746,21 @@ window.PTO = (() => {
 
     const end = parse(S.end), months = [];
     for (let m = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1)); m <= end; m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1))) months.push(m);
-    h += `<nav class="p-chips" aria-label="Jump to month">${months.map(m => `<a href="#pm${key(m).slice(0, 7)}" data-jump="pm${key(m).slice(0, 7)}">${MONTHS[m.getUTCMonth()].slice(0, 3)} ${String(m.getUTCFullYear()).slice(2)}</a>`).join('')}</nav>`;
+    const ids = months.map(m => key(m).slice(0, 7)), nowId = tk.slice(0, 7);
+    if (openMonth && !ids.includes(openMonth)) openMonth = null;
+    if (openMonth === null) openMonth = ids.includes(nowId) ? nowId : (tk < ids[0] ? ids[0] : ids[ids.length - 1]);
+    const chip = (id, label, extra) => `<a href="#pm${id}" data-month-jump="${id}"${id === openMonth ? ' class="on" aria-current="true"' : ''}${extra || ''}>${label}</a>`;
+    h += `<nav class="p-chips" aria-label="Jump to month">${ids.includes(nowId) ? chip(nowId, 'TODAY').replace('<a ', '<a data-today ') : ''}${months.map(m => chip(key(m).slice(0, 7), `${MONTHS[m.getUTCMonth()].slice(0, 3)} ${String(m.getUTCFullYear()).slice(2)}`)).join('')}<a href="#p-settings" class="alt" data-settings-jump>SETTINGS</a></nav>`;
 
     months.forEach(m => {
       const y = m.getUTCFullYear(), mo = m.getUTCMonth(), last = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
       const lastInfo = L.days[key(new Date(Date.UTC(y, mo, last)))];
       let mUsed = 0;
       for (let i = 1; i <= last; i++) { const ii = L.days[key(new Date(Date.UTC(y, mo, i)))]; if (ii) mUsed += ii.h; }
-      h += `<section class="p-month" id="pm${key(m).slice(0, 7)}"><div class="p-mhead"><h2>${MONTHS[mo]} ${y}</h2><span class="p-mb">${mUsed ? `-${fmt(mUsed)}H · ` : ''}ENDS ${lastInfo ? fmt(lastInfo.bal) : '-'}H</span></div><div class="p-grid">`;
+      const id = key(m).slice(0, 7), isOpen = id === openMonth, endBal = lastInfo ? lastInfo.bal : null;
+      h += `<section class="p-month${isOpen ? ' open' : ''}" id="pm${id}"><button type="button" class="p-mhead" data-month="${id}" aria-expanded="${isOpen}" aria-controls="pg${id}"><span class="p-mname">${MONTHS[mo]} ${y}</span><span class="p-mb${endBal != null && endBal < 0 ? ' neg' : ''}">${mUsed ? `-${fmt(mUsed)}H · ` : ''}ENDS ${endBal != null ? fmt(endBal) : '-'}H</span></button>`;
+      if (isOpen) {
+      h += `<div class="p-grid" id="pg${id}">`;
       DOWS.forEach(d => { h += `<div class="p-dow">${d.charAt(0)}</div>`; });
       for (let j = 0; j < m.getUTCDay(); j++) h += '<div class="p-day empty"></div>';
       for (let dn = 1; dn <= last; dn++) {
@@ -1759,7 +1780,9 @@ window.PTO = (() => {
         const label = `${niceDate(k)}${e && e.n ? ', ' + e.n : ''}${tag ? ', ' + tag : ''}, balance ${fmt(info.bal)} hours`;
         h += `<button type="button" class="${cls}" data-k="${k}" aria-label="${esc(label)}"><span class="p-dn">${dn}</span>${info.cap ? '<span class="p-cap">CAP</span>' : (info.pay ? '<i class="p-pay"></i>' : '')}<span class="p-tag">${esc(tag)}</span><span class="p-bal">${showBal ? fmt(info.bal) : ''}</span></button>`;
       }
-      h += '</div></section>';
+      h += '</div>';
+      }
+      h += '</section>';
     });
 
     const fld = (lbl, id, v, type) => `<label for="pf_${id}">${lbl}<input id="pf_${id}" data-f="${id}" type="${type || 'number'}" step="0.01" inputmode="decimal" value="${esc(v)}"></label>`;
@@ -1825,6 +1848,25 @@ window.PTO = (() => {
   const put   = (k, entry) => { S.days[k] = Object.assign(entry, { u: Date.now() }); };
   const clear = k => { S.days[k] = { t: 'none', u: Date.now() }; };
 
+  // open one month (the others fold, so the page stays short) and bring it to the top
+  const scrollOpts = () => ({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  function focusHeader(id) {
+    const hd = host.querySelector(`[data-month="${id}"]`);
+    if (hd) hd.focus({ preventScroll: true });
+  }
+  function showMonth(id) {
+    openMonth = id; render();
+    const sec = document.getElementById('pm' + id);
+    if (sec) sec.scrollIntoView(scrollOpts());
+    focusHeader(id);
+  }
+  function showSettings() {
+    const st = document.getElementById('p-settings');
+    if (!st) return;
+    st.open = true;
+    st.scrollIntoView(scrollOpts());
+  }
+
   function focusCell(k) {
     const cell = host.querySelector(`[data-k="${k}"]`);
     if (cell) cell.focus({ preventScroll: true });
@@ -1875,11 +1917,13 @@ window.PTO = (() => {
         const first = sheetRoot.querySelector('.p-btn'); if (first) first.focus();
         return;
       }
-      const jump = e.target.closest('[data-jump]');
-      if (jump) {
-        e.preventDefault();
-        const t = document.getElementById(jump.dataset.jump);
-        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const mj = e.target.closest('[data-month-jump]');
+      if (mj) { e.preventDefault(); showMonth(mj.dataset.monthJump); return; }
+      if (e.target.closest('[data-settings-jump]')) { e.preventDefault(); showSettings(); return; }
+      const mh = e.target.closest('[data-month]');
+      if (mh) {
+        if (openMonth === mh.dataset.month) { openMonth = ''; render(); focusHeader(mh.dataset.month); }   // tap the open month again to fold it
+        else showMonth(mh.dataset.month);
         return;
       }
       if (e.target.closest('#p-update')) {
