@@ -311,6 +311,15 @@
     100% { transform: scale(1,1) skewX(0deg); filter: brightness(1); }
   }
 
+  /* ── TAB SWITCH: the picture briefly drops and re-locks (only the swapped panel, ~0.22s) ── */
+  .tab-resync { animation: tab-resync 0.22s ease-out; }
+  @keyframes tab-resync {
+    0%   { opacity: 0.4;  filter: brightness(1.35) saturate(0.7); transform: translateX(-1.5px); }
+    30%  { opacity: 0.85; filter: brightness(1.12);               transform: translateX(1px); }
+    60%  { opacity: 1;    filter: brightness(1.04);               transform: translateX(-0.5px); }
+    100% { opacity: 1;    filter: none;                           transform: none; }
+  }
+
   @keyframes phosphor-drift {
     0%,100% { transform: translateX(0); }
     48% { transform: translateX(0); }
@@ -2759,6 +2768,15 @@ document.getElementById('week-prompt').addEventListener('click', e => {
 });
 
 // ── TABS ──
+function tabResync(el) {
+  el.classList.remove('tab-resync');
+  void el.offsetWidth;   // restart if switched again mid-effect
+  el.classList.add('tab-resync');
+  if (!el.dataset.rs) {   // one listener per panel
+    el.dataset.rs = '1';
+    el.addEventListener('animationend', e => { if (e.target === el) el.classList.remove('tab-resync'); });
+  }
+}
 function showTab(name, animate = true) {
   const pto = name === 'pto';
   document.getElementById('view-timecard').hidden = pto;
@@ -2771,7 +2789,7 @@ function showTab(name, animate = true) {
   });
   if (pto) PTO.render(); else syncFromPlanner();
   try { store.set(TAB_KEY, name); } catch (e) {}
-  if (animate) { window.scrollTo(0, 0); runDegauss(); }
+  if (animate) { window.scrollTo(0, 0); tabResync(document.getElementById(pto ? 'view-pto' : 'view-timecard')); }
 }
 document.querySelector('.tabs').addEventListener('click', e => {
   const t = e.target.closest('.tab');
