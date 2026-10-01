@@ -1,16 +1,14 @@
-const CACHE = "timecard-v22";
+const CACHE = "timecard-v23";
 const FILES = [
   "./index.html",
   "./manifest.json",
-  "./icons/tan-apple-touch-icon.png",
-  "./icons/tan-android-chrome-192x192.png",
-  "./icons/tan-android-chrome-512x512.png",
-  "./icons/tan-favicon-96x96.png",
-  "./icons/tan-favicon-48x48.png",
-  "./icons/tan-favicon-32x32.png",
-  "./icons/tan-favicon-16x16.png",
-  "./icons/tan-favicon.ico",
-  "./icons/tan-ms-icon-144x144.png"
+  "./icons/apple-touch-icon-light-180.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-48.png",
+  "./icons/icon-32.png",
+  "./icons/icon-16.png",
+  "./icons/favicon.ico"
 ];
 
 self.addEventListener("install", e => {
