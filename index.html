@@ -1145,9 +1145,9 @@
   .p-chips a:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
 
   .p-month { border: 1px solid #164416; border-left: 2px solid #249724; background: rgba(0,18,0,0.42); padding: 9px 10px 10px; scroll-margin-top: 12px; }
-  .p-mhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+  .p-mhead { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 12px; margin-bottom: 7px; flex-wrap: wrap; }
   .p-mhead h2 { font-family: 'VT323', monospace; font-weight: normal; font-size: 21px; color: #33ff33; letter-spacing: 2px; text-shadow: 0 0 4px #33ff3355; }
-  .p-mb { font-size: 10px; color: #1a8c1a; letter-spacing: 0.5px; }
+  .p-mb { font-size: 10px; color: #1a8c1a; letter-spacing: 0.5px; white-space: nowrap; margin-left: auto; padding-right: 2px; }
   .p-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
   .p-dow { font-size: 9px; color: #1a8c1a; text-align: center; letter-spacing: 1px; padding-bottom: 2px; }
   .p-day {
@@ -1169,7 +1169,7 @@
   button.p-day:hover { border-color: #33ff3366; }
   button.p-day:focus-visible { outline: 1px solid #33ff33; outline-offset: 1px; }
   .p-day.empty { border: none; background: transparent; cursor: default; }
-  .p-day.wk { background: rgba(0,10,0,0.3); border-color: transparent; cursor: default; color: #1a5c1a; }
+  .p-day.wk { background: rgba(0,10,0,0.3); border: 1px dashed #0f2e0f; cursor: default; color: #1a5c1a; }
   .p-dn { font-family: 'VT323', monospace; font-size: 17px; line-height: 1; }
   .p-tag { font-size: 10px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.5px; }
   .p-bal { font-size: 9px; color: #1a8c1a; line-height: 1; letter-spacing: 0.3px; }
@@ -1289,6 +1289,8 @@
     .tab { font-size: 16px; padding: 2px 8px 1px; letter-spacing: 1px; }
     .week-label { flex-basis: 100%; margin-left: 0; }
     .p-month { padding: 8px 7px 9px; }
+    .p-mhead h2 { font-size: 18px; letter-spacing: 1px; }
+    .p-mb { font-size: 9px; letter-spacing: 0; }
     .p-grid { gap: 2px; }
     .p-day { min-height: 46px; padding: 2px 3px; }
     .p-dn { font-size: 15px; }
