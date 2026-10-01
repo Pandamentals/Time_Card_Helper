@@ -1221,6 +1221,29 @@
   .p-form input:focus, .p-custom input:focus { border-color: #33ff33; box-shadow: 0 0 6px #33ff3344; }
   .p-form input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1) sepia(1) saturate(3) hue-rotate(80deg); opacity: 0.35; }
   .p-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+  .p-panel { border: 1px solid #164416; border-left: 2px solid #249724; background: rgba(0,18,0,0.42); padding: 10px 11px; }
+  .p-pending { border-left-color: #ffaa00; background: rgba(10,8,0,0.7); }
+  .p-subhead { font-family: 'VT323', monospace; font-size: 19px; letter-spacing: 2px; color: #33ff33; margin-bottom: 4px; }
+  .p-pending .p-subhead { color: #ffaa00; }
+  .p-sync { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #164416; }
+  .p-lbl { display: block; font-size: 9px; color: #1a8c1a; letter-spacing: 1px; margin: 10px 0 3px; }
+  .p-code {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    word-break: break-all;
+    padding: 6px 8px;
+    border: 1px solid #1a5c1a;
+    background: #000;
+    color: #33ff33;
+    outline: none;
+    resize: vertical;
+  }
+  .p-code:focus { border-color: #33ff33; box-shadow: 0 0 6px #33ff3344; }
+  .p-err { min-height: 1em; margin-top: 6px; font-size: 10px; letter-spacing: 0.5px; color: #ff4422; text-shadow: 0 0 5px #ff442266; }
   .p-note { font-size: 9px; color: #1a8c1a; letter-spacing: 0.5px; line-height: 1.8; margin-top: 8px; }
 
   .p-btn {
@@ -1470,7 +1493,7 @@ const store = {
 // Owns the PTO plan (localStorage 'pto-planner-v1') and renders into #view-pto.
 // The timecard only touches it through window.PTO: getMode / setMode / render.
 window.PTO = (() => {
-  const DEFAULT = {"rev":3,"start":15.85,"asOf":"2026-09-30","accrual":4.62,"firstPay":"2026-10-08","cap":120,"hMT":8.25,"hF":7,"end":"2027-09-30","days":{"2026-11-26":{"t":"hol","n":"Thanksgiving"},"2026-11-27":{"t":"hol","n":"Day after Thanksgiving"},"2026-12-24":{"t":"hol","n":"Christmas Eve"},"2026-12-25":{"t":"hol","n":"Christmas"},"2026-12-28":{"t":"shut","full":true,"n":"Shutdown"},"2026-12-29":{"t":"shut","full":true,"n":"Shutdown"},"2026-12-30":{"t":"shut","full":true,"n":"Shutdown"},"2026-12-31":{"t":"hol","n":"New Year's Eve"},"2027-01-01":{"t":"hol","n":"New Year's Day"},"2027-05-31":{"t":"hol","n":"Memorial Day"},"2027-07-05":{"t":"hol","n":"Independence Day (obs.)"},"2027-09-06":{"t":"hol","n":"Labor Day"},"2026-10-29":{"t":"pto","h":4.13}}};
+  const DEFAULT = {"rev":3,"start":null,"asOf":null,"accrual":null,"firstPay":"2026-10-08","cap":120,"hMT":8.25,"hF":7,"end":"2027-09-30","days":{"2026-11-26":{"t":"hol","n":"Thanksgiving"},"2026-11-27":{"t":"hol","n":"Day after Thanksgiving"},"2026-12-24":{"t":"hol","n":"Christmas Eve"},"2026-12-25":{"t":"hol","n":"Christmas"},"2026-12-28":{"t":"shut","full":true,"n":"Shutdown"},"2026-12-29":{"t":"shut","full":true,"n":"Shutdown"},"2026-12-30":{"t":"shut","full":true,"n":"Shutdown"},"2026-12-31":{"t":"hol","n":"New Year's Eve"},"2027-01-01":{"t":"hol","n":"New Year's Day"},"2027-05-31":{"t":"hol","n":"Memorial Day"},"2027-07-05":{"t":"hol","n":"Independence Day (obs.)"},"2027-09-06":{"t":"hol","n":"Labor Day"}}};
   const LS_KEY = 'pto-planner-v1';
   const MONTHS = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
   const DOWS   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
@@ -1481,6 +1504,12 @@ window.PTO = (() => {
     const ls = JSON.parse(store.get(LS_KEY) || 'null');
     if (ls && ls.rev > S.rev) S = ls;
   } catch (e) {}
+  // plans saved before sync existed: give their edits a tiny timestamp so they export, and lose to any real edit
+  Object.keys(S.days).forEach(k => {
+    const base = DEFAULT.days[k];
+    if (!S.days[k].u && JSON.stringify(S.days[k]) !== JSON.stringify(base)) S.days[k].u = 1;
+  });
+  if (!S.su && S.start != null) S.su = 1;
 
   let openKey = null, confirmReset = false;
   const host = document.getElementById('view-pto');
@@ -1524,16 +1553,169 @@ window.PTO = (() => {
     return { days: out, low, used, shutUsed, forfeit, endBal: bal, decBefore };
   }
 
+  // ── SETUP + DEVICE SYNC ──
+  // A fresh install has no personal numbers: balance, its date and accrual are asked once (needsSetup).
+  // Sync is manual and server-free: pack the plan into a code/link, merge it on the other device.
+  // Every edited day carries a timestamp (u); on merge the newer edit to each day wins, and the settings
+  // group (su) comes from whichever device changed it last.
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const NUM_KEYS = ['start', 'accrual', 'cap', 'hMT', 'hF'], DATE_KEYS = ['asOf', 'firstPay', 'end'];
+  const SETTING_KEYS = NUM_KEYS.concat(DATE_KEYS);
+  const UNDO_KEY = 'pto-planner-undo';
+  const needsSetup = () => S.start == null || S.asOf == null || S.accrual == null;
+  const validDate = v => typeof v === 'string' && DATE_RE.test(v) && key(parse(v)) === v;
+  let pending = null, syncMsg = '', codeOut = '', codeOpen = false;
+
+  function pack() {
+    const d = {};
+    Object.keys(S.days).forEach(k => { if (S.days[k].u) d[k] = S.days[k]; });
+    const p = { v: 1, d };
+    if (S.su && !needsSetup()) { p.su = S.su; p.s = {}; SETTING_KEYS.forEach(k => { p.s[k] = S[k]; }); }
+    return p;
+  }
+  function encode(p) {
+    const bytes = new TextEncoder().encode(JSON.stringify(p));
+    let bin = ''; bytes.forEach(c => { bin += String.fromCharCode(c); });
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  // codes arrive from links and pasted text: treat as untrusted, accept only well-formed plans
+  function sanitize(p) {
+    if (!p || p.v !== 1 || !p.d || typeof p.d !== 'object') return null;
+    const keys = Object.keys(p.d);
+    if (keys.length > 800) return null;
+    const out = { su: 0, s: null, d: {} };
+    for (const k of keys) {
+      const e = p.d[k];
+      if (!validDate(k) || !e || !['pto', 'hol', 'holoff', 'shut', 'none'].includes(e.t)) return null;
+      const c = { t: e.t, u: Number.isFinite(e.u) ? e.u : 0 };
+      if (e.full === true) c.full = true;
+      if (e.h !== undefined) { if (!Number.isFinite(e.h) || e.h < 0 || e.h > 24) return null; c.h = e.h; }
+      if (typeof e.n === 'string') c.n = e.n.slice(0, 60);
+      out.d[k] = c;
+    }
+    if (p.s && typeof p.s === 'object') {
+      const s = {};
+      for (const k of NUM_KEYS)  { if (!Number.isFinite(p.s[k]) || p.s[k] < 0 || p.s[k] > 5000) return null; s[k] = p.s[k]; }
+      for (const k of DATE_KEYS) { if (!validDate(p.s[k])) return null; s[k] = p.s[k]; }
+      if (!(s.asOf < s.end) || (parse(s.end) - parse(s.asOf)) / 864e5 > 1100 || s.accrual <= 0) return null;
+      out.s = s; out.su = Number.isFinite(p.su) ? p.su : 0;
+    }
+    return out;
+  }
+  function decode(text) {
+    try {
+      let b = String(text).trim().replace(/^.*#sync=/s, '').replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+      b += '='.repeat((4 - b.length % 4) % 4);
+      const bin = atob(b), bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return sanitize(JSON.parse(new TextDecoder().decode(bytes)));
+    } catch (e) { return null; }
+  }
+  function preview(r) {
+    let newer = 0, kept = 0;
+    Object.keys(r.d).forEach(k => { const a = S.days[k]; if (!a || (r.d[k].u || 0) > (a.u || 0)) newer++; else kept++; });
+    return { newer, kept, settings: !!(r.s && r.su > (S.su || 0)) };
+  }
+  function merge(r) {
+    const p = preview(r);
+    store.set(UNDO_KEY, JSON.stringify(S));
+    Object.keys(r.d).forEach(k => { const a = S.days[k]; if (!a || (r.d[k].u || 0) > (a.u || 0)) S.days[k] = r.d[k]; });
+    if (p.settings) { Object.assign(S, r.s); S.su = r.su; }
+    return p;
+  }
+  function copyText(text, done) {
+    const fallback = () => {
+      const t = document.getElementById('p-code-out');
+      if (t) { t.select(); try { document.execCommand('copy'); done(true); return; } catch (e) {} }
+      done(false);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done(true), fallback);
+    else fallback();
+  }
+  const syncLink = () => location.href.split('#')[0] + '#sync=' + codeOut;
+
+  function syncAction(a) {
+    if (a === 'setup-save') return saveSetup();
+    if (a === 'code-get')   { codeOut = encode(pack()); codeOpen = true; syncMsg = ''; return render(); }
+    if (a === 'code-copy' || a === 'link-copy') {
+      return copyText(a === 'link-copy' ? syncLink() : codeOut, ok => setSyncMsg(ok ? 'COPIED. PASTE IT INTO MERGE ON THE OTHER DEVICE.' : 'COPY FAILED: SELECT THE TEXT AND COPY IT BY HAND.'));
+    }
+    if (a === 'link-share') {
+      if (navigator.share) { navigator.share({ title: 'PTO plan', url: syncLink() }).catch(() => {}); return; }
+      return syncAction('link-copy');
+    }
+    if (a === 'merge-code') {
+      const box = document.getElementById('p-code-in');
+      const r = box && box.value.trim() ? decode(box.value) : null;
+      if (!r) { syncMsg = box && box.value.trim() ? 'THAT CODE COULD NOT BE READ. COPY IT AGAIN IN FULL.' : 'PASTE A CODE OR LINK FIRST.'; return render(); }
+      pending = r; syncMsg = ''; return render();
+    }
+    if (a === 'merge-cancel') { pending = null; syncMsg = ''; return render(); }
+    if (a === 'merge-confirm' && pending) {
+      const p = merge(pending); pending = null;
+      syncMsg = `MERGED: ${p.newer} DAY${p.newer === 1 ? '' : 'S'} FROM THE CODE, ${p.kept} KEPT FROM THIS DEVICE. SETTINGS ${p.settings ? 'TAKEN FROM THE CODE' : 'KEPT FROM THIS DEVICE'}.`;
+      return changed();
+    }
+    if (a === 'undo') {
+      const prev = store.get(UNDO_KEY);
+      if (!prev) return;
+      try { S = JSON.parse(prev); } catch (e) { return; }
+      store.remove(UNDO_KEY); syncMsg = 'LAST MERGE UNDONE.'; return changed();
+    }
+  }
+  function setSyncMsg(t) { syncMsg = t; const el = document.getElementById('p-sync-msg'); if (el) el.textContent = t; }
+
+  function saveSetup() {
+    const err = t => { const el = document.getElementById('p-setup-err'); if (el) el.textContent = t; };
+    const bal = parseFloat(document.getElementById('ps_start').value);
+    const acc = parseFloat(document.getElementById('ps_accrual').value);
+    const asOf = document.getElementById('ps_asOf').value;
+    if (isNaN(bal) || bal < 0)       return err('ENTER YOUR CURRENT PTO BALANCE (0 OR MORE).');
+    if (!validDate(asOf))            return err('PICK THE DATE THAT BALANCE IS FROM.');
+    if (asOf >= S.end)               return err(`THAT DATE MUST BE BEFORE THE PLAN ENDS (${S.end}).`);
+    if (isNaN(acc) || acc <= 0)      return err('ENTER HOW MANY HOURS YOU EARN EACH PAYDAY.');
+    S.start = r2(bal); S.asOf = asOf; S.accrual = r2(acc); S.su = Date.now();
+    changed();
+  }
+
+  const pasteBox = () => `<label class="p-lbl" for="p-code-in">PASTE A SYNC CODE OR LINK</label><textarea class="p-code" id="p-code-in" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+    <div class="p-row"><button type="button" class="p-btn hol" data-sync="merge-code">[ MERGE CODE ]</button>${store.get(UNDO_KEY) ? '<button type="button" class="p-btn quiet" data-sync="undo">[ UNDO LAST MERGE ]</button>' : ''}</div>
+    <p class="p-note" id="p-sync-msg" role="status">${esc(syncMsg)}</p>`;
+  const pendingHtml = () => {
+    if (!pending) return '';
+    const p = preview(pending), n = Object.keys(pending.d).length;
+    return `<div class="p-panel p-pending" role="alert"><div class="p-subhead">CODE FROM ANOTHER DEVICE</div>
+      <p class="p-note">${n} DAY ENTR${n === 1 ? 'Y' : 'IES'}: ${p.newer} NEWER THAN THIS DEVICE, ${p.kept} KEPT FROM THIS DEVICE. SETTINGS: ${p.settings ? 'TAKEN FROM THE CODE (NEWER)' : 'KEPT FROM THIS DEVICE'}.</p>
+      <div class="p-row"><button type="button" class="p-btn hol" data-sync="merge-confirm">[ MERGE ]</button><button type="button" class="p-btn quiet" data-sync="merge-cancel">[ CANCEL ]</button></div></div>`;
+  };
+  const setupHtml = () => `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">FIRST-TIME SETUP &nbsp;|&nbsp; ENTER YOUR OWN NUMBERS</div></div>
+    <div class="p-panel"><div class="p-form">
+      <label for="ps_start">PTO balance (H)<input id="ps_start" type="number" step="0.01" min="0" inputmode="decimal"></label>
+      <label for="ps_asOf">Balance as of<input id="ps_asOf" type="date" value="${todayKey()}"></label>
+      <label for="ps_accrual">Accrual per payday (H)<input id="ps_accrual" type="number" step="0.01" min="0" inputmode="decimal"></label>
+    </div>
+    <p class="p-note">TAKE THESE FROM YOUR LATEST PAYSTUB OR HR PORTAL. HOLIDAYS, SHUTDOWN DAYS, FIRST PAYDAY, ROLLOVER CAP AND DAY LENGTHS ARE ALREADY SET FOR THE COMPANY; EDIT THEM LATER IN SETTINGS.</p>
+    <p class="p-err" id="p-setup-err" role="alert"></p>
+    <div class="p-row"><button type="button" class="p-btn hol" data-sync="setup-save">[ SAVE &amp; START ]</button></div></div>
+    <div class="p-panel"><div class="p-subhead">ALREADY SET UP ON ANOTHER DEVICE?</div>${pasteBox()}</div>`;
+  const syncHtml = () => `<div class="p-sync"><div class="p-subhead">SYNC DEVICES</div>
+    <p class="p-note">EDIT ON ANY DEVICE, THEN MOVE THE PLAN ACROSS. ON MERGE THE NEWER EDIT TO EACH DAY WINS, SO NOTHING IS LOST.</p>
+    <div class="p-row"><button type="button" class="p-btn" data-sync="code-get">[ GET CODE ]</button></div>
+    ${codeOpen ? `<textarea class="p-code" id="p-code-out" readonly rows="4" spellcheck="false" aria-label="Sync code">${esc(codeOut)}</textarea>
+    <div class="p-row"><button type="button" class="p-btn" data-sync="code-copy">[ COPY CODE ]</button><button type="button" class="p-btn" data-sync="link-copy">[ COPY LINK ]</button><button type="button" class="p-btn" data-sync="link-share">[ SHARE ]</button></div>` : ''}
+    ${pasteBox()}</div>`;
+
   // ── RENDER ──
   function render() {
     if (!host) return;
+    if (needsSetup()) { host.innerHTML = pendingHtml() + setupHtml(); renderSheet(); return; }
     const L = ledger(), tk = todayKey();
     const todayInfo = L.days[tk];
     const todayBal = todayInfo ? todayInfo.bal : (tk > S.end ? L.endBal : S.start);   // end of today, incl. planned PTO
     const lowBad = L.low.v < 0, fTotal = L.forfeit.reduce((a, b) => a + b.h, 0);
     const first = addDays(parse(S.asOf), 1), last = parse(S.end);
     const span = d => `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}`;
-    let h = `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">${span(first)} TO ${span(last)} &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
+    let h = pendingHtml() + `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">${span(first)} TO ${span(last)} &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
     h += `<div class="p-stats">
       <div class="p-stat"><span class="k">Balance today</span><span class="v">${fmt(todayBal)}H</span><span class="n">${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(S.start)}H ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
       <div class="p-stat"><span class="k">Planned PTO</span><span class="v">${fmt(L.used)}H</span><span class="n">${fmt(L.shutUsed)}H IS SHUTDOWN</span></div>
@@ -1587,7 +1769,7 @@ window.PTO = (() => {
       ${fld('Rollover cap Jan 1 (H)', 'cap', S.cap)}${fld('First payday', 'firstPay', S.firstPay, 'date')}
       ${fld('Mon to Thu day (H)', 'hMT', S.hMT)}${fld('Friday day (H)', 'hF', S.hF)}
       </div><div class="p-row"><button type="button" class="p-btn danger" id="p-reset">${confirmReset ? 'TAP AGAIN TO RESET EVERYTHING' : '[ RESET PLAN ]'}</button>${confirmReset ? '<button type="button" class="p-btn" id="p-reset-cancel">CANCEL</button>' : ''}</div>
-      <p class="p-note">ENTER YOUR REAL BALANCE AND ITS DATE TO RE-SYNC WITH YOUR PAYSTUB; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p></details>`;
+      <p class="p-note">ENTER YOUR REAL BALANCE AND ITS DATE TO RE-SYNC WITH YOUR PAYSTUB; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p>${syncHtml()}</details>`;
 
     const wasOpen = (document.getElementById('p-settings') || {}).open, y0 = window.scrollY;
     host.innerHTML = h;
@@ -1639,6 +1821,10 @@ window.PTO = (() => {
     st.setProperty('--vh', Math.max(bottom - top, 0) + 'px');
   }
 
+  // every edit carries a timestamp; removals leave a tombstone so a merge can tell "deleted" from "never set"
+  const put   = (k, entry) => { S.days[k] = Object.assign(entry, { u: Date.now() }); };
+  const clear = k => { S.days[k] = { t: 'none', u: Date.now() }; };
+
   function focusCell(k) {
     const cell = host.querySelector(`[data-k="${k}"]`);
     if (cell) cell.focus({ preventScroll: true });
@@ -1652,22 +1838,22 @@ window.PTO = (() => {
   function act(a) {
     const k = openKey, e = S.days[k], name = e && e.n;
     if (a === 'close') { closeSheet(); return; }
-    if (a === 'full')            S.days[k] = { t: 'pto', full: true };
-    else if (a === 'half')       S.days[k] = { t: 'pto', h: r2(fullH(parse(k)) / 2) };
-    else if (a === 'clear')      delete S.days[k];
-    else if (a === 'addhol')     S.days[k] = { t: 'hol', n: 'Company holiday' };
-    else if (a === 'holoff')     S.days[k] = { t: 'holoff', n: name };
-    else if (a === 'holon')      S.days[k] = { t: 'hol', n: name };
-    else if (a === 'shutfull')   S.days[k] = { t: 'shut', full: true, n: name };
-    else if (a === 'shutunpaid') S.days[k] = { t: 'shut', h: 0, n: name };
+    if (a === 'full')            put(k, { t: 'pto', full: true });
+    else if (a === 'half')       put(k, { t: 'pto', h: r2(fullH(parse(k)) / 2) });
+    else if (a === 'clear')      clear(k);
+    else if (a === 'addhol')     put(k, { t: 'hol', n: 'Company holiday' });
+    else if (a === 'holoff')     put(k, { t: 'holoff', n: name });
+    else if (a === 'holon')      put(k, { t: 'hol', n: name });
+    else if (a === 'shutfull')   put(k, { t: 'shut', full: true, n: name });
+    else if (a === 'shutunpaid') put(k, { t: 'shut', h: 0, n: name });
     else if (a === 'custom') {
       const v = parseFloat(document.getElementById('p-customH').value);
       if (isNaN(v) || v < 0) return;
-      if (e && e.t === 'shut') S.days[k] = { t: 'shut', h: r2(v), n: name };
-      else if (v === 0) delete S.days[k];
-      else S.days[k] = { t: 'pto', h: r2(v) };
+      if (e && e.t === 'shut') put(k, { t: 'shut', h: r2(v), n: name });
+      else if (v === 0) clear(k);
+      else put(k, { t: 'pto', h: r2(v) });
     }
-    if (name && S.days[k] && !S.days[k].n) S.days[k].n = name;
+    if (name && S.days[k] && S.days[k].t !== 'none' && !S.days[k].n) S.days[k].n = name;
     openKey = null; changed();
     focusCell(k);
   }
@@ -1681,6 +1867,8 @@ window.PTO = (() => {
   // ── EVENTS (delegated once; render() replaces the markup, not the host) ──
   if (host) {
     host.addEventListener('click', e => {
+      const sb = e.target.closest('[data-sync]');
+      if (sb) { syncAction(sb.dataset.sync); return; }
       const day = e.target.closest('button.p-day');
       if (day) {
         openKey = day.dataset.k; render();
@@ -1724,6 +1912,7 @@ window.PTO = (() => {
         if (isNaN(n) || n < 0) { e.target.value = S[f]; return; }
         S[f] = n;
       }
+      S.su = Date.now();
       changed();
     });
   }
@@ -1755,15 +1944,25 @@ window.PTO = (() => {
     const name = (e && e.n) || (base && base.n) || '';
     const shut = (e && e.t === 'shut') || (base && base.t === 'shut');
     const named = o => { if (name) o.n = name; return o; };
-    if (mode === 'hol')                    S.days[k] = { t: 'hol', n: name || 'Company holiday' };
-    else if (mode === 'pto')               S.days[k] = named(shut ? { t: 'shut', full: true } : { t: 'pto', full: true });
-    else if (base && base.t === 'hol')     S.days[k] = { t: 'holoff', n: base.n };
-    else if (shut)                         S.days[k] = named({ t: 'shut', h: 0 });
-    else                                   delete S.days[k];
+    if (mode === 'hol')                    put(k, { t: 'hol', n: name || 'Company holiday' });
+    else if (mode === 'pto')               put(k, named(shut ? { t: 'shut', full: true } : { t: 'pto', full: true }));
+    else if (base && base.t === 'hol')     put(k, { t: 'holoff', n: base.n });
+    else if (shut)                         put(k, named({ t: 'shut', h: 0 }));
+    else                                   clear(k);
     changed();
   }
 
-  return { render, getMode, setMode };
+  // a sync link opened on this device: stash it for confirmation (never applied silently)
+  let incoming = false;
+  const m = /^#sync=([A-Za-z0-9_-]+)$/.exec(location.hash);
+  if (m) {
+    incoming = true;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    pending = decode(m[1]);
+    if (!pending) syncMsg = 'THAT LINK COULD NOT BE READ. COPY THE CODE INSTEAD.';
+  }
+
+  return { render, getMode, setMode, needsSetup, hasIncoming: () => incoming };
 })();
 </script>
 <script>
@@ -2517,7 +2716,12 @@ initWeek();
 document.querySelectorAll('input[type=time]').forEach(el =>
   el.addEventListener('change', () => { saveState(); update(); })
 );
-showTab(store.get(TAB_KEY) === 'pto' ? 'pto' : 'timecard', false);
+// first launch (no PTO numbers yet) or an incoming sync link opens the planner once
+const SETUP_KEY = 'timecard_setup_seen';
+let startTab = store.get(TAB_KEY) === 'pto' ? 'pto' : 'timecard';
+if (PTO.hasIncoming() || (PTO.needsSetup() && !store.get(SETUP_KEY))) { startTab = 'pto'; store.set(SETUP_KEY, '1'); }
+syncFromPlanner();   // the timecard is always computed, even when the planner tab is shown first
+showTab(startTab, false);
 
 if (shouldShowBoot()) {
   markBootShown();

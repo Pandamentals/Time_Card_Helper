@@ -1,4 +1,4 @@
-const CACHE = "timecard-v16";
+const CACHE = "timecard-v17";
 const FILES = [
   "./index.html",
   "./manifest.json",
