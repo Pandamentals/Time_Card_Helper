@@ -1119,6 +1119,19 @@
   .p-stat .k { display: block; font-size: 9px; color: #1a8c1a; margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; }
   .p-stat .v { display: block; font-family: 'VT323', monospace; font-size: 24px; line-height: 1; color: #33ff33; text-shadow: 0 0 5px #33ff3366; letter-spacing: 1px; }
   .p-stat .n { display: block; font-size: 9px; color: #1a8c1a; margin-top: 3px; line-height: 1.5; letter-spacing: 0.5px; }
+  .p-tile-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    margin-top: 5px;
+    padding: 2px 6px;
+    border: 1px solid #1a5c1a;
+    background: #000;
+    color: #1a8c1a;
+    letter-spacing: 1px;
+    cursor: pointer;
+  }
+  .p-tile-btn:hover { border-color: #33ff3377; color: #33ff33; }
+  .p-tile-btn:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
   .p-stat.warn { border-top-color: #cc9900; }
   .p-stat.warn .v { color: #ffaa00; text-shadow: 0 0 8px #ffaa0099; }
   .p-stat.bad { border-top-color: #ff4422; background: rgba(19,0,0,0.6); }
@@ -1445,6 +1458,14 @@
 </div>
 
 <script>
+// localStorage can throw (private mode, blocked site data); the app keeps working without saving
+const store = {
+  get(k)    { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  remove(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+</script>
+<script>
 // ── PTO PLANNER ──
 // Owns the PTO plan (localStorage 'pto-planner-v1') and renders into #view-pto.
 // The timecard only touches it through window.PTO: getMode / setMode / render.
@@ -1457,7 +1478,7 @@ window.PTO = (() => {
   const clone = o => JSON.parse(JSON.stringify(o));
   let S = clone(DEFAULT);
   try {
-    const ls = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    const ls = JSON.parse(store.get(LS_KEY) || 'null');
     if (ls && ls.rev > S.rev) S = ls;
   } catch (e) {}
 
@@ -1507,10 +1528,14 @@ window.PTO = (() => {
   function render() {
     if (!host) return;
     const L = ledger(), tk = todayKey();
+    const todayInfo = L.days[tk];
+    const todayBal = todayInfo ? todayInfo.bal : (tk > S.end ? L.endBal : S.start);   // end of today, incl. planned PTO
     const lowBad = L.low.v < 0, fTotal = L.forfeit.reduce((a, b) => a + b.h, 0);
-    let h = `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">OCT 2026 TO SEP 2027 &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
+    const first = addDays(parse(S.asOf), 1), last = parse(S.end);
+    const span = d => `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}`;
+    let h = `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">${span(first)} TO ${span(last)} &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
     h += `<div class="p-stats">
-      <div class="p-stat"><span class="k">Balance now</span><span class="v">${fmt(S.start)}H</span><span class="n">AS OF ${niceDate(S.asOf)}</span></div>
+      <div class="p-stat"><span class="k">Balance today</span><span class="v">${fmt(todayBal)}H</span><span class="n">${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(S.start)}H ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
       <div class="p-stat"><span class="k">Planned PTO</span><span class="v">${fmt(L.used)}H</span><span class="n">${fmt(L.shutUsed)}H IS SHUTDOWN</span></div>
       <div class="p-stat${fTotal > 0 ? ' warn' : ''}"><span class="k">Dec 31 balance</span><span class="v">${L.decBefore == null ? '-' : fmt(L.decBefore) + 'H'}</span><span class="n">${fTotal > 0 ? `${fmt(fTotal)}H OVER THE ${fmt(S.cap)}H CAP, LOST JAN 1` : `UNDER THE ${fmt(S.cap)}H ROLLOVER CAP`}</span></div>
       <div class="p-stat${lowBad ? ' bad' : ''}"><span class="k">Lowest point</span><span class="v">${fmt(L.low.v)}H</span><span class="n">${L.low.k ? niceDate(L.low.k) : ''}${lowBad ? ' · OVERDRAWN' : ''}</span></div>
@@ -1523,8 +1548,8 @@ window.PTO = (() => {
       <span><i class="p-sw" style="border-color:#ff4422;box-shadow:0 0 5px #ff442266"></i>Below zero</span>
     </div>`;
 
-    const start = parse(S.asOf), end = parse(S.end), months = [];
-    for (let m = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)); m <= end; m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1))) months.push(m);
+    const end = parse(S.end), months = [];
+    for (let m = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1)); m <= end; m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1))) months.push(m);
     h += `<nav class="p-chips" aria-label="Jump to month">${months.map(m => `<a href="#pm${key(m).slice(0, 7)}" data-jump="pm${key(m).slice(0, 7)}">${MONTHS[m.getUTCMonth()].slice(0, 3)} ${String(m.getUTCFullYear()).slice(2)}</a>`).join('')}</nav>`;
 
     months.forEach(m => {
@@ -1538,6 +1563,7 @@ window.PTO = (() => {
       for (let dn = 1; dn <= last; dn++) {
         const d = new Date(Date.UTC(y, mo, dn)), k = key(d), wd = d.getUTCDay(), info = L.days[k] || {}, e = S.days[k];
         if (wd === 0 || wd === 6) { h += `<div class="p-day wk"><span class="p-dn">${dn}</span>${info.pay ? '<i class="p-pay"></i>' : ''}</div>`; continue; }
+        if (info.bal === undefined) { h += `<div class="p-day wk"><span class="p-dn">${dn}</span></div>`; continue; }   // outside the plan window
         let cls = 'p-day', tag = '', showBal = false;
         if (e) {
           if (e.t === 'pto')        { cls += ' pto';    tag = '-' + fmt(info.h); showBal = true; }
@@ -1556,11 +1582,12 @@ window.PTO = (() => {
 
     const fld = (lbl, id, v, type) => `<label for="pf_${id}">${lbl}<input id="pf_${id}" data-f="${id}" type="${type || 'number'}" step="0.01" inputmode="decimal" value="${esc(v)}"></label>`;
     h += `<details class="p-settings" id="p-settings"><summary>SETTINGS</summary><div class="p-form">
-      ${fld('Starting balance (H)', 'start', S.start)}${fld('Accrual per payday (H)', 'accrual', S.accrual)}
+      ${fld('Balance (H)', 'start', S.start)}${fld('Balance as of', 'asOf', S.asOf, 'date')}
+      ${fld('Plan ends', 'end', S.end, 'date')}${fld('Accrual per payday (H)', 'accrual', S.accrual)}
       ${fld('Rollover cap Jan 1 (H)', 'cap', S.cap)}${fld('First payday', 'firstPay', S.firstPay, 'date')}
       ${fld('Mon to Thu day (H)', 'hMT', S.hMT)}${fld('Friday day (H)', 'hF', S.hF)}
       </div><div class="p-row"><button type="button" class="p-btn danger" id="p-reset">${confirmReset ? 'TAP AGAIN TO RESET EVERYTHING' : '[ RESET PLAN ]'}</button>${confirmReset ? '<button type="button" class="p-btn" id="p-reset-cancel">CANCEL</button>' : ''}</div>
-      <p class="p-note">FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p></details>`;
+      <p class="p-note">ENTER YOUR REAL BALANCE AND ITS DATE TO RE-SYNC WITH YOUR PAYSTUB; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p></details>`;
 
     const wasOpen = (document.getElementById('p-settings') || {}).open, y0 = window.scrollY;
     host.innerHTML = h;
@@ -1571,6 +1598,7 @@ window.PTO = (() => {
 
   // ── DAY SHEET ──
   function renderSheet(L) {
+    document.getElementById('monitor').inert = !!openKey;   // keep keyboard/screen-reader focus inside the dialog
     if (!openKey) { sheetRoot.innerHTML = ''; return; }
     L = L || ledger();
     const k = openKey, d = parse(k), e = S.days[k], info = L.days[k] || { bal: S.start }, full = fullH(d);
@@ -1611,11 +1639,14 @@ window.PTO = (() => {
     st.setProperty('--vh', Math.max(bottom - top, 0) + 'px');
   }
 
+  function focusCell(k) {
+    const cell = host.querySelector(`[data-k="${k}"]`);
+    if (cell) cell.focus({ preventScroll: true });
+  }
   function closeSheet() {
     const k = openKey;
     openKey = null; render();
-    const cell = host.querySelector(`[data-k="${k}"]`);
-    if (cell) cell.focus({ preventScroll: true });
+    focusCell(k);
   }
 
   function act(a) {
@@ -1638,11 +1669,12 @@ window.PTO = (() => {
     }
     if (name && S.days[k] && !S.days[k].n) S.days[k].n = name;
     openKey = null; changed();
+    focusCell(k);
   }
 
   function changed() {
     S.rev = (S.rev || 1) + 1;
-    try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {}
+    try { store.set(LS_KEY, JSON.stringify(S)); } catch (e) {}
     if (host && !host.hidden) render();
   }
 
@@ -1662,6 +1694,14 @@ window.PTO = (() => {
         if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
+      if (e.target.closest('#p-update')) {
+        const st = document.getElementById('p-settings');
+        st.open = true;
+        const inp = document.getElementById('pf_start');
+        inp.scrollIntoView({ block: 'center' });
+        inp.focus(); inp.select();
+        return;
+      }
       if (e.target.closest('#p-reset')) {
         if (!confirmReset) { confirmReset = true; render(); return; }
         const rev = S.rev; S = clone(DEFAULT); S.rev = rev; confirmReset = false; changed(); return;
@@ -1672,7 +1712,13 @@ window.PTO = (() => {
       const f = e.target.dataset && e.target.dataset.f;
       if (!f) return;
       const v = e.target.value;
-      if (f === 'firstPay') { if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; S[f] = v; }
+      if (f === 'firstPay' || f === 'asOf' || f === 'end') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || isNaN(parse(v))) { e.target.value = S[f]; return; }
+        const asOf = f === 'asOf' ? v : S.asOf, end = f === 'end' ? v : S.end;
+        // the plan needs at least one day, and stays small enough to render (max ~3 years)
+        if (f !== 'firstPay' && (end <= asOf || (parse(end) - parse(asOf)) / 864e5 > 1100)) { e.target.value = S[f]; return; }
+        S[f] = v;
+      }
       else {
         const n = parseFloat(v);
         if (isNaN(n) || n < 0) { e.target.value = S[f]; return; }
@@ -2117,13 +2163,13 @@ function saveState() {
         savedOut: savedTimes[i]?.outV || null,
       }))
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    store.set(STORAGE_KEY, JSON.stringify(state));
   } catch(e) { console.warn('State save failed', e); }
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = store.get(STORAGE_KEY);
     if (!raw) return;
     const state = JSON.parse(raw);
     hadState = true; loadedWeek = state.weekStart || null; loadedSynced = !!state.synced;
@@ -2174,7 +2220,7 @@ resetBtn.addEventListener('click', () => {
 confirmNo.addEventListener('click', cancelReset);
 // clears times, lunch and away; planned HOL/PTO/shutdown days come straight back from the planner
 function resetWeekData() {
-  localStorage.removeItem(STORAGE_KEY);
+  store.remove(STORAGE_KEY);
   Object.keys(savedTimes).forEach(k => delete savedTimes[k]);
 
   DAYS_CONFIG.forEach((day, i) => {
@@ -2207,7 +2253,7 @@ const themeToggle = document.getElementById('themeToggle');
 function applyTheme(theme) {
   monitor.classList.remove('theme-tan', 'theme-dark');
   monitor.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-tan');
-  localStorage.setItem(THEME_KEY, theme);
+  store.set(THEME_KEY, theme);
 }
 
 function themeBlink(theme) {
@@ -2226,12 +2272,9 @@ themeToggle.addEventListener('click', () => {
 // ── BOOT SCREEN ──
 const BOOT_KEY = 'timecard_boot_date';
 
-function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function shouldShowBoot() { return localStorage.getItem(BOOT_KEY) !== todayStr(); }
-function markBootShown()  { localStorage.setItem(BOOT_KEY, todayStr()); }
+const todayStr = () => localKey(new Date());
+function shouldShowBoot() { return store.get(BOOT_KEY) !== todayStr(); }
+function markBootShown()  { store.set(BOOT_KEY, todayStr()); }
 
 function runDegauss(el) {
   el = el || document.querySelector('.content');
@@ -2394,14 +2437,43 @@ function initWeek() {
       if ((m === 'hol' || m === 'pto') && PTO.getMode(k).mode === 'none') PTO.setMode(k, m);
     });
   }
-  if (hadState && loadedWeek && loadedWeek !== keys[0]) {
-    pendingRollover = true;
-    const prompt = document.getElementById('week-prompt');
-    prompt.innerHTML = `<div class="wp-text">NEW WEEK DETECTED — TIMES ARE STILL FROM THE WEEK OF ${fmtKey(loadedWeek)}.</div>
-      <div class="wp-btns"><button class="wp-btn" data-wp="roll">[ ROLL OVER ] RESET TIMES</button><button class="wp-btn keep" data-wp="keep">[ KEEP ] USE SAVED TIMES</button></div>`;
-    prompt.classList.add('active');
-  }
+  if (hadState && loadedWeek && loadedWeek !== keys[0]) offerRollover();
 }
+
+// true when no clock times, lunches or away blocks differ from the defaults
+function weekIsPristine() {
+  return DAYS_CONFIG.every((day, i) => {
+    const lunch = document.querySelector(`.lunch-btn.active[data-day="${i}"]`)?.dataset.val;
+    return document.getElementById(`in-${i}`).value  === day.defaultIn
+        && document.getElementById(`out-${i}`).value === day.defaultOut
+        && parseInt(lunch, 10) === day.defaultLunch
+        && !isAwayDay(i);
+  });
+}
+
+// ask before carrying last week's edited times into a new week (nothing to ask if they were never edited)
+function offerRollover() {
+  if (weekIsPristine()) return;
+  pendingRollover = true;
+  const prompt = document.getElementById('week-prompt');
+  prompt.innerHTML = `<div class="wp-text">NEW WEEK DETECTED — TIMES ARE STILL FROM THE WEEK OF ${fmtKey(loadedWeek)}.</div>
+    <div class="wp-btns"><button class="wp-btn" data-wp="roll">[ ROLL OVER ] RESET TIMES</button><button class="wp-btn keep" data-wp="keep">[ KEEP ] USE SAVED TIMES</button></div>`;
+  prompt.classList.add('active');
+}
+
+// an app left open overnight (or over the weekend) must notice the new day / week
+let shownWeek = weekKeys()[0], shownDay = localKey(new Date());
+function checkClock() {
+  const wk = weekKeys()[0], day = localKey(new Date());
+  if (wk === shownWeek && day === shownDay) return;
+  if (wk !== shownWeek && !pendingRollover) { loadedWeek = shownWeek; hadState = true; offerRollover(); }
+  shownWeek = wk; shownDay = day;
+  syncFromPlanner();
+  if (!document.getElementById('view-pto').hidden) PTO.render();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkClock(); });
+window.addEventListener('focus', checkClock);
+setInterval(checkClock, 60000);
 
 document.getElementById('week-prompt').addEventListener('click', e => {
   const b = e.target.closest('[data-wp]');
@@ -2424,7 +2496,7 @@ function showTab(name, animate = true) {
     t.tabIndex = on ? 0 : -1;
   });
   if (pto) PTO.render(); else syncFromPlanner();
-  try { localStorage.setItem(TAB_KEY, name); } catch (e) {}
+  try { store.set(TAB_KEY, name); } catch (e) {}
   if (animate) { window.scrollTo(0, 0); runDegauss(); }
 }
 document.querySelector('.tabs').addEventListener('click', e => {
@@ -2439,13 +2511,13 @@ document.querySelector('.tabs').addEventListener('keydown', e => {
 });
 
 // ── INIT ──
-applyTheme(localStorage.getItem(THEME_KEY) || 'tan');
+applyTheme(store.get(THEME_KEY) || 'tan');
 loadState();
 initWeek();
 document.querySelectorAll('input[type=time]').forEach(el =>
   el.addEventListener('change', () => { saveState(); update(); })
 );
-showTab(localStorage.getItem(TAB_KEY) === 'pto' ? 'pto' : 'timecard', false);
+showTab(store.get(TAB_KEY) === 'pto' ? 'pto' : 'timecard', false);
 
 if (shouldShowBoot()) {
   markBootShown();
