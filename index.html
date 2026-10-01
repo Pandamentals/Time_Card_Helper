@@ -1037,6 +1037,271 @@
     .metric-value { font-size: 18px; }
   }
 
+  /* ── TABS ── */
+  [hidden] { display: none !important; }
+  .tabs { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .tab {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    letter-spacing: 2px;
+    padding: 2px 12px 1px;
+    border: 1px solid #1a5c1a;
+    background: #000;
+    color: #1a8c1a;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab:hover { border-color: #33ff3355; color: #33ff3399; }
+  .tab[aria-selected="true"] {
+    background: #001a00;
+    border-color: #33ff33;
+    color: #33ff33;
+    text-shadow: 0 0 6px #33ff3388;
+    box-shadow: 0 0 6px #33ff3333, inset 0 0 6px #33ff3311;
+  }
+  .tab:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
+  .week-label { margin-left: auto; font-size: 10px; color: #1a8c1a; letter-spacing: 1px; }
+
+  /* ── TIMECARD: week dates, planner-driven states ── */
+  .day-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .day-date { font-size: 9px; color: #1a8c1a; letter-spacing: 1px; }
+  .day-card.is-today { border-left-color: #33ff33; box-shadow: 0 0 8px #33ff3318; }
+  .day-card.is-today .day-date::before { content: '▸ TODAY · '; color: #33ff33; }
+  .off-display {
+    display: none;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: #0077aa;
+    letter-spacing: 2px;
+    padding: 7px 0 5px;
+    text-align: center;
+    border: 1px dashed #00446655;
+    background: rgba(0,8,16,0.5);
+    margin-bottom: 2px;
+  }
+  .day-card.is-off { border-left-color: #006699; opacity: 0.65; }
+  .pill-off { color: #0099cc; border-color: #0099cc55; text-shadow: 0 0 5px #0099cc88; background: #00080d; }
+
+  #week-prompt {
+    display: none;
+    margin-bottom: 10px;
+    border: 1px solid #cc990055;
+    border-left: 2px solid #ffaa00;
+    background: rgba(10,8,0,0.7);
+    padding: 7px 11px;
+  }
+  #week-prompt.active { display: block; }
+  .wp-text { font-size: 10px; color: #ffaa00; letter-spacing: 0.5px; line-height: 2; }
+  .wp-text::before { content: '⚑ '; }
+  .wp-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .wp-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 5px 10px;
+    border: 1px solid #cc9900;
+    background: #000;
+    color: #ffaa00;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+  .wp-btn:hover { background: #0a0800; box-shadow: 0 0 6px #cc990044; }
+  .wp-btn.keep { border-color: #1a5c1a; color: #33ff33; }
+  .wp-btn.keep:hover { background: #001a00; box-shadow: 0 0 6px #33ff3333; }
+
+  /* ── PTO PLANNER ── */
+  #view-pto { display: flex; flex-direction: column; gap: 12px; }
+  .p-title { font-family: 'VT323', monospace; font-size: 22px; color: #fff; letter-spacing: 3px; text-shadow: 0 0 8px #33ff3399; line-height: 1; }
+  .p-sub { font-size: 10px; color: #1a8c1a; letter-spacing: 0.5px; line-height: 1.8; margin-top: 3px; }
+
+  .p-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  @media (min-width: 480px) { .p-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .p-stat { background: rgba(0,18,0,0.42); border: 1px solid #164416; border-top: 2px solid #249724; padding: 8px 9px; min-width: 0; }
+  .p-stat .k { display: block; font-size: 9px; color: #1a8c1a; margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .p-stat .v { display: block; font-family: 'VT323', monospace; font-size: 24px; line-height: 1; color: #33ff33; text-shadow: 0 0 5px #33ff3366; letter-spacing: 1px; }
+  .p-stat .n { display: block; font-size: 9px; color: #1a8c1a; margin-top: 3px; line-height: 1.5; letter-spacing: 0.5px; }
+  .p-stat.warn { border-top-color: #cc9900; }
+  .p-stat.warn .v { color: #ffaa00; text-shadow: 0 0 8px #ffaa0099; }
+  .p-stat.bad { border-top-color: #ff4422; background: rgba(19,0,0,0.6); }
+  .p-stat.bad .v { color: #ff4422; text-shadow: 0 0 8px #ff442299; }
+
+  .p-legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 9px; color: #1a8c1a; letter-spacing: 1px; text-transform: uppercase; }
+  .p-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .p-sw { width: 10px; height: 10px; display: inline-block; border: 1px solid; }
+
+  .p-chips { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .p-chips::-webkit-scrollbar { display: none; }
+  .p-chips a {
+    flex: none;
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    letter-spacing: 1px;
+    padding: 0 9px;
+    border: 1px solid #1a5c1a;
+    background: #000;
+    color: #1a8c1a;
+    text-decoration: none;
+  }
+  .p-chips a:hover { border-color: #33ff3355; color: #33ff33; }
+  .p-chips a:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
+
+  .p-month { border: 1px solid #164416; border-left: 2px solid #249724; background: rgba(0,18,0,0.42); padding: 9px 10px 10px; scroll-margin-top: 12px; }
+  .p-mhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+  .p-mhead h2 { font-family: 'VT323', monospace; font-weight: normal; font-size: 21px; color: #33ff33; letter-spacing: 2px; text-shadow: 0 0 4px #33ff3355; }
+  .p-mb { font-size: 10px; color: #1a8c1a; letter-spacing: 0.5px; }
+  .p-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+  .p-dow { font-size: 9px; color: #1a8c1a; text-align: center; letter-spacing: 1px; padding-bottom: 2px; }
+  .p-day {
+    position: relative;
+    min-height: 52px;
+    border: 1px solid #0f2e0f;
+    background: rgba(0,0,0,0.55);
+    color: #33ff33;
+    padding: 3px 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    min-width: 0;
+    transition: border-color 0.15s;
+  }
+  button.p-day:hover { border-color: #33ff3366; }
+  button.p-day:focus-visible { outline: 1px solid #33ff33; outline-offset: 1px; }
+  .p-day.empty { border: none; background: transparent; cursor: default; }
+  .p-day.wk { background: rgba(0,10,0,0.3); border-color: transparent; cursor: default; color: #1a5c1a; }
+  .p-dn { font-family: 'VT323', monospace; font-size: 17px; line-height: 1; }
+  .p-tag { font-size: 10px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.5px; }
+  .p-bal { font-size: 9px; color: #1a8c1a; line-height: 1; letter-spacing: 0.3px; }
+  .p-day.pto { background: #0a0800; border-color: #886600; }
+  .p-day.pto .p-tag { color: #ffaa00; text-shadow: 0 0 5px #ffaa0088; }
+  .p-day.pto .p-bal { color: #886600; }
+  .p-day.hol { background: #002a00; border-color: #33ff3388; }
+  .p-day.hol .p-tag { color: #33ff33; text-shadow: 0 0 5px #33ff3388; }
+  .p-day.holoff .p-tag { color: #1a8c1a; text-decoration: line-through; }
+  .p-day.shut { background: #00080d; border: 1px dashed #0099cc; }
+  .p-day.shut .p-tag { color: #0099cc; text-shadow: 0 0 5px #0099cc88; }
+  .p-day.neg { box-shadow: inset 0 0 0 1px #ff4422, 0 0 6px #ff442244; }
+  .p-day.neg .p-bal { color: #ff4422; }
+  .p-day.today .p-dn { color: #fff; text-shadow: 0 0 6px #fff; text-decoration: underline; text-underline-offset: 2px; }
+  .p-pay { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 5px #fff; }
+  .p-cap { position: absolute; top: 3px; right: 4px; font-size: 8px; color: #ffaa00; text-shadow: 0 0 5px #ffaa0088; letter-spacing: 0.5px; }
+
+  .p-settings { border: 1px solid #164416; border-left: 2px solid #249724; background: rgba(0,18,0,0.42); padding: 8px 11px; }
+  .p-settings summary { cursor: pointer; font-family: 'VT323', monospace; font-size: 19px; letter-spacing: 2px; color: #33ff33; }
+  .p-settings summary:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
+  .p-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 10px; }
+  .p-form label { display: flex; flex-direction: column; gap: 3px; font-size: 9px; color: #1a8c1a; letter-spacing: 1px; text-transform: uppercase; min-width: 0; }
+  .p-form input, .p-custom input {
+    font-family: 'VT323', monospace;
+    font-size: 19px;
+    letter-spacing: 1px;
+    padding: 3px 6px;
+    border: 1px solid #1a5c1a;
+    background: #000;
+    color: #33ff33;
+    text-shadow: 0 0 4px #33ff3366;
+    outline: none;
+    width: 100%;
+    min-width: 0;
+  }
+  .p-form input:focus, .p-custom input:focus { border-color: #33ff33; box-shadow: 0 0 6px #33ff3344; }
+  .p-form input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1) sepia(1) saturate(3) hue-rotate(80deg); opacity: 0.35; }
+  .p-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+  .p-note { font-size: 9px; color: #1a8c1a; letter-spacing: 0.5px; line-height: 1.8; margin-top: 8px; }
+
+  .p-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 7px 10px;
+    border: 1px solid #1a5c1a;
+    background: #000;
+    color: #33ff33;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .p-btn:hover { background: #001a00; border-color: #33ff3377; }
+  .p-btn:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
+  .p-btn.pto  { border-color: #cc9900; color: #ffaa00; }
+  .p-btn.pto:hover  { background: #0a0800; box-shadow: 0 0 6px #cc990044; }
+  .p-btn.hol  { border-color: #249724; color: #33ff33; }
+  .p-btn.shut { border-color: #0088bb; color: #0099cc; }
+  .p-btn.shut:hover { background: #00080d; box-shadow: 0 0 6px #0099cc33; }
+  .p-btn.danger { border-color: #ff4422; color: #ff4422; }
+  .p-btn.danger:hover { background: #130000; box-shadow: 0 0 6px #ff442244; }
+  .p-btn.quiet { color: #1a8c1a; }
+
+  /* day dialog lives on <body> (outside the CRT's transformed layers) so position:fixed anchors to the viewport */
+  .p-scrim {
+    position: fixed;
+    left: var(--vl, 0px); top: var(--vt, 0px);
+    width: var(--vw, 100vw); height: var(--vh, 100vh);
+    border-radius: 12px;
+    background: rgba(0,6,0,0.72);
+    z-index: 1000;
+  }
+  .p-sheet {
+    position: fixed;
+    top: calc(var(--vt, 0px) + var(--vh, 100vh) / 2);
+    left: calc(var(--vl, 0px) + var(--vw, 100vw) / 2);
+    transform: translate(-50%, -50%);
+    width: min(calc(var(--vw, 100vw) - 24px), 420px);
+    max-height: calc(var(--vh, 100vh) - 24px);
+    overflow-y: auto;
+    z-index: 1001;
+    background: #020e02;
+    border: 1px solid #33ff33;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    color: #33ff33;
+    text-shadow: 0 0 4px rgba(51,255,51,0.35);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.8), 0 0 24px #33ff3333, inset 0 0 30px rgba(0,0,0,0.5);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .p-sheet { animation: p-pop 0.16s ease-out; }
+    @keyframes p-pop { from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+  }
+  .p-sheet::before {
+    content: '';
+    position: absolute; inset: 0;
+    pointer-events: none;
+    border-radius: 12px;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.22) 3px, rgba(0,0,0,0.22) 4px);
+  }
+  .p-sheet h3 { font-family: 'VT323', monospace; font-weight: normal; font-size: 24px; color: #fff; letter-spacing: 3px; text-shadow: 0 0 8px #33ff3399; line-height: 1; }
+  .p-sheet .p-meta { font-size: 10px; color: #1a8c1a; letter-spacing: 0.5px; margin-top: 4px; }
+  .p-flow { font-family: 'VT323', monospace; font-size: 21px; letter-spacing: 1px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .p-flow b { font-weight: normal; color: #fff; text-shadow: 0 0 6px #fff; }
+  .p-flow b.neg { color: #ff4422; text-shadow: 0 0 6px #ff4422; }
+  .p-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .p-opts .p-btn { width: 100%; }
+  .p-custom { display: flex; gap: 7px; align-items: center; }
+  .p-custom input { flex: 1; }
+
+  @media (max-width: 430px) {
+    .p-flow { font-size: 18px; gap: 6px; letter-spacing: 0; }
+    .tab { font-size: 16px; padding: 2px 8px 1px; letter-spacing: 1px; }
+    .week-label { flex-basis: 100%; margin-left: 0; }
+    .p-month { padding: 8px 7px 9px; }
+    .p-grid { gap: 2px; }
+    .p-day { min-height: 46px; padding: 2px 3px; }
+    .p-dn { font-size: 15px; }
+    .p-tag { font-size: 8px; letter-spacing: 0; }
+    .p-bal { font-size: 8px; letter-spacing: 0; }
+  }
+  @media (min-width: 768px) {
+    .p-day { min-height: 62px; padding: 4px 6px; }
+    .p-tag { font-size: 11px; }
+    .p-bal { font-size: 10px; }
+    .p-stat .v { font-size: 26px; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -1127,6 +1392,15 @@
         </div>
       </div>
 
+      <div class="tabs" role="tablist" aria-label="Tools">
+        <button class="tab" role="tab" id="tab-timecard" data-tab="timecard" aria-selected="true" aria-controls="view-timecard">[ TIMECARD ]</button>
+        <button class="tab" role="tab" id="tab-pto" data-tab="pto" aria-selected="false" aria-controls="view-pto" tabindex="-1">[ PTO PLANNER ]</button>
+        <span class="week-label" id="weekLabel"></span>
+      </div>
+
+      <div id="view-timecard" role="tabpanel" aria-labelledby="tab-timecard">
+
+      <div id="week-prompt" role="alert"></div>
       <div id="holiday-banner"></div>
       <div id="rows"></div>
 
@@ -1160,10 +1434,290 @@
         </div>
       </div>
 
+      </div><!-- /view-timecard -->
+
+      <div id="view-pto" role="tabpanel" aria-labelledby="tab-pto" hidden></div>
+
     </div>
   </div>
 </div>
 
+<script>
+// ── PTO PLANNER ──
+// Owns the PTO plan (localStorage 'pto-planner-v1') and renders into #view-pto.
+// The timecard only touches it through window.PTO: getMode / setMode / render.
+window.PTO = (() => {
+  const DEFAULT = {"rev":3,"start":15.85,"asOf":"2026-09-30","accrual":4.62,"firstPay":"2026-10-08","cap":120,"hMT":8.25,"hF":7,"end":"2027-09-30","days":{"2026-11-26":{"t":"hol","n":"Thanksgiving"},"2026-11-27":{"t":"hol","n":"Day after Thanksgiving"},"2026-12-24":{"t":"hol","n":"Christmas Eve"},"2026-12-25":{"t":"hol","n":"Christmas"},"2026-12-28":{"t":"shut","full":true,"n":"Shutdown"},"2026-12-29":{"t":"shut","full":true,"n":"Shutdown"},"2026-12-30":{"t":"shut","full":true,"n":"Shutdown"},"2026-12-31":{"t":"hol","n":"New Year's Eve"},"2027-01-01":{"t":"hol","n":"New Year's Day"},"2027-05-31":{"t":"hol","n":"Memorial Day"},"2027-07-05":{"t":"hol","n":"Independence Day (obs.)"},"2027-09-06":{"t":"hol","n":"Labor Day"},"2026-10-29":{"t":"pto","h":4.13}}};
+  const LS_KEY = 'pto-planner-v1';
+  const MONTHS = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  const DOWS   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+  const clone = o => JSON.parse(JSON.stringify(o));
+  let S = clone(DEFAULT);
+  try {
+    const ls = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (ls && ls.rev > S.rev) S = ls;
+  } catch (e) {}
+
+  let openKey = null, confirmReset = false;
+  const host = document.getElementById('view-pto');
+  const sheetRoot = document.createElement('div');
+  document.body.appendChild(sheetRoot);
+
+  // ── DATE / MONEY HELPERS (dates are UTC midnights so DST never shifts a day) ──
+  const parse   = k => { const p = k.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); };
+  const key     = d => d.toISOString().slice(0, 10);
+  const addDays = (d, n) => new Date(d.getTime() + n * 864e5);
+  const r2      = x => Math.round(x * 100) / 100;
+  const fmt     = x => r2(x).toFixed(2);
+  const fullH   = d => d.getUTCDay() === 5 ? S.hF : S.hMT;
+  const isPay   = d => { const diff = Math.round((d - parse(S.firstPay)) / 864e5); return diff >= 0 && diff % 14 === 0; };
+  const entryHours = (e, d) => (!e || (e.t !== 'pto' && e.t !== 'shut')) ? 0 : (e.full ? fullH(d) : (+e.h || 0));
+  const esc     = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const niceDate = k => { const d = parse(k); return `${DOWS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCDate()}`; };
+  const todayKey = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
+
+  // ── LEDGER: walk day by day from the as-of date, applying payday accrual, PTO use and the Jan 1 cap ──
+  function ledger() {
+    let bal = S.start, d = addDays(parse(S.asOf), 1);
+    const end = parse(S.end), out = {};
+    let low = { v: Infinity, k: null }, used = 0, shutUsed = 0, decBefore = null;
+    const forfeit = [];
+    while (d <= end) {
+      const k = key(d), info = {};
+      if (d.getUTCMonth() === 0 && d.getUTCDate() === 1 && bal > S.cap) {
+        forfeit.push({ k, h: r2(bal - S.cap) });
+        bal = S.cap; info.cap = true;
+      }
+      if (isPay(d)) { bal = r2(bal + S.accrual); info.pay = true; }
+      const e = S.days[k], h = entryHours(e, d);
+      if (h) { bal = r2(bal - h); used = r2(used + h); if (e.t === 'shut') shutUsed = r2(shutUsed + h); }
+      info.h = h; info.bal = bal; out[k] = info;
+      const wd = d.getUTCDay();
+      if (wd !== 0 && wd !== 6 && bal < low.v) low = { v: bal, k };
+      if (d.getUTCMonth() === 11 && d.getUTCDate() === 31) decBefore = bal;
+      d = addDays(d, 1);
+    }
+    return { days: out, low, used, shutUsed, forfeit, endBal: bal, decBefore };
+  }
+
+  // ── RENDER ──
+  function render() {
+    if (!host) return;
+    const L = ledger(), tk = todayKey();
+    const lowBad = L.low.v < 0, fTotal = L.forfeit.reduce((a, b) => a + b.h, 0);
+    let h = `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">OCT 2026 TO SEP 2027 &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
+    h += `<div class="p-stats">
+      <div class="p-stat"><span class="k">Balance now</span><span class="v">${fmt(S.start)}H</span><span class="n">AS OF ${niceDate(S.asOf)}</span></div>
+      <div class="p-stat"><span class="k">Planned PTO</span><span class="v">${fmt(L.used)}H</span><span class="n">${fmt(L.shutUsed)}H IS SHUTDOWN</span></div>
+      <div class="p-stat${fTotal > 0 ? ' warn' : ''}"><span class="k">Dec 31 balance</span><span class="v">${L.decBefore == null ? '-' : fmt(L.decBefore) + 'H'}</span><span class="n">${fTotal > 0 ? `${fmt(fTotal)}H OVER THE ${fmt(S.cap)}H CAP, LOST JAN 1` : `UNDER THE ${fmt(S.cap)}H ROLLOVER CAP`}</span></div>
+      <div class="p-stat${lowBad ? ' bad' : ''}"><span class="k">Lowest point</span><span class="v">${fmt(L.low.v)}H</span><span class="n">${L.low.k ? niceDate(L.low.k) : ''}${lowBad ? ' · OVERDRAWN' : ''}</span></div>
+    </div>`;
+    h += `<div class="p-legend">
+      <span><i class="p-sw" style="background:#0a0800;border-color:#886600"></i>Your PTO</span>
+      <span><i class="p-sw" style="background:#00080d;border:1px dashed #0099cc"></i>Shutdown</span>
+      <span><i class="p-sw" style="background:#002a00;border-color:#33ff3388"></i>Paid holiday</span>
+      <span><i class="p-sw" style="background:#fff;border-color:#fff;border-radius:50%;box-shadow:0 0 5px #fff"></i>Payday</span>
+      <span><i class="p-sw" style="border-color:#ff4422;box-shadow:0 0 5px #ff442266"></i>Below zero</span>
+    </div>`;
+
+    const start = parse(S.asOf), end = parse(S.end), months = [];
+    for (let m = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)); m <= end; m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1))) months.push(m);
+    h += `<nav class="p-chips" aria-label="Jump to month">${months.map(m => `<a href="#pm${key(m).slice(0, 7)}" data-jump="pm${key(m).slice(0, 7)}">${MONTHS[m.getUTCMonth()].slice(0, 3)} ${String(m.getUTCFullYear()).slice(2)}</a>`).join('')}</nav>`;
+
+    months.forEach(m => {
+      const y = m.getUTCFullYear(), mo = m.getUTCMonth(), last = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
+      const lastInfo = L.days[key(new Date(Date.UTC(y, mo, last)))];
+      let mUsed = 0;
+      for (let i = 1; i <= last; i++) { const ii = L.days[key(new Date(Date.UTC(y, mo, i)))]; if (ii) mUsed += ii.h; }
+      h += `<section class="p-month" id="pm${key(m).slice(0, 7)}"><div class="p-mhead"><h2>${MONTHS[mo]} ${y}</h2><span class="p-mb">${mUsed ? `-${fmt(mUsed)}H · ` : ''}ENDS ${lastInfo ? fmt(lastInfo.bal) : '-'}H</span></div><div class="p-grid">`;
+      DOWS.forEach(d => { h += `<div class="p-dow">${d.charAt(0)}</div>`; });
+      for (let j = 0; j < m.getUTCDay(); j++) h += '<div class="p-day empty"></div>';
+      for (let dn = 1; dn <= last; dn++) {
+        const d = new Date(Date.UTC(y, mo, dn)), k = key(d), wd = d.getUTCDay(), info = L.days[k] || {}, e = S.days[k];
+        if (wd === 0 || wd === 6) { h += `<div class="p-day wk"><span class="p-dn">${dn}</span>${info.pay ? '<i class="p-pay"></i>' : ''}</div>`; continue; }
+        let cls = 'p-day', tag = '', showBal = false;
+        if (e) {
+          if (e.t === 'pto')        { cls += ' pto';    tag = '-' + fmt(info.h); showBal = true; }
+          else if (e.t === 'hol')   { cls += ' hol';    tag = 'HOL'; }
+          else if (e.t === 'holoff'){ cls += ' holoff'; tag = 'HOL'; }
+          else if (e.t === 'shut')  { cls += ' shut';   tag = info.h ? '-' + fmt(info.h) : 'UNPD'; showBal = true; }
+        }
+        if (info.pay) showBal = true;
+        if (info.bal < 0) { cls += ' neg'; showBal = true; }
+        if (k === tk) cls += ' today';
+        const label = `${niceDate(k)}${e && e.n ? ', ' + e.n : ''}${tag ? ', ' + tag : ''}, balance ${fmt(info.bal)} hours`;
+        h += `<button type="button" class="${cls}" data-k="${k}" aria-label="${esc(label)}"><span class="p-dn">${dn}</span>${info.cap ? '<span class="p-cap">CAP</span>' : (info.pay ? '<i class="p-pay"></i>' : '')}<span class="p-tag">${esc(tag)}</span><span class="p-bal">${showBal ? fmt(info.bal) : ''}</span></button>`;
+      }
+      h += '</div></section>';
+    });
+
+    const fld = (lbl, id, v, type) => `<label for="pf_${id}">${lbl}<input id="pf_${id}" data-f="${id}" type="${type || 'number'}" step="0.01" inputmode="decimal" value="${esc(v)}"></label>`;
+    h += `<details class="p-settings" id="p-settings"><summary>SETTINGS</summary><div class="p-form">
+      ${fld('Starting balance (H)', 'start', S.start)}${fld('Accrual per payday (H)', 'accrual', S.accrual)}
+      ${fld('Rollover cap Jan 1 (H)', 'cap', S.cap)}${fld('First payday', 'firstPay', S.firstPay, 'date')}
+      ${fld('Mon to Thu day (H)', 'hMT', S.hMT)}${fld('Friday day (H)', 'hF', S.hF)}
+      </div><div class="p-row"><button type="button" class="p-btn danger" id="p-reset">${confirmReset ? 'TAP AGAIN TO RESET EVERYTHING' : '[ RESET PLAN ]'}</button>${confirmReset ? '<button type="button" class="p-btn" id="p-reset-cancel">CANCEL</button>' : ''}</div>
+      <p class="p-note">FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p></details>`;
+
+    const wasOpen = (document.getElementById('p-settings') || {}).open, y0 = window.scrollY;
+    host.innerHTML = h;
+    if (wasOpen) document.getElementById('p-settings').open = true;
+    window.scrollTo(0, y0);
+    renderSheet(L);
+  }
+
+  // ── DAY SHEET ──
+  function renderSheet(L) {
+    if (!openKey) { sheetRoot.innerHTML = ''; return; }
+    L = L || ledger();
+    const k = openKey, d = parse(k), e = S.days[k], info = L.days[k] || { bal: S.start }, full = fullH(d);
+    const prev = L.days[key(addDays(d, -1))];
+    let before = prev ? prev.bal : S.start;
+    if (info.cap) before = Math.min(before, S.cap);
+    if (info.pay) before = r2(before + S.accrual);
+    const btn = (act, label, cls) => `<button type="button" class="p-btn ${cls || ''}" data-act="${act}">${label}</button>`;
+    let b = `<div class="p-scrim" data-act="close"></div><div class="p-sheet" role="dialog" aria-modal="true" aria-labelledby="p-sh-t">
+      <div><h3 id="p-sh-t">${niceDate(k)} ${d.getUTCFullYear()}</h3><p class="p-meta">${e && e.n ? esc(e.n).toUpperCase() + ' · ' : ''}${info.pay ? `PAYDAY +${fmt(S.accrual)}H · ` : ''}FULL DAY HERE IS ${fmt(full)}H</p></div>
+      <div class="p-flow">START <b>${fmt(before)}</b> &rarr; END <b class="${info.bal < 0 ? 'neg' : ''}">${fmt(info.bal)}</b> H</div><div class="p-opts">`;
+    if (e && e.t === 'hol')         b += btn('holoff', 'Working this day', 'danger') + btn('close', 'Keep holiday', 'quiet');
+    else if (e && e.t === 'holoff') b += btn('holon', 'Restore paid holiday', 'hol') + btn('full', 'PTO full day', 'pto');
+    else if (e && e.t === 'shut')   b += btn('shutfull', `Cover with PTO (${fmt(full)})`, 'pto') + btn('shutunpaid', 'Leave unpaid', 'shut');
+    else b += btn('full', `Full day (${fmt(full)})`, 'pto') + btn('half', `Half day (${fmt(r2(full / 2))})`, 'pto') + btn('addhol', 'Paid holiday', 'hol')
+      + (e && e.t === 'pto' ? btn('clear', 'Remove PTO', 'danger') : btn('close', 'Cancel', 'quiet'));
+    b += '</div>';
+    if (!(e && e.t === 'hol')) {
+      const cur = (e && (e.t === 'pto' || e.t === 'shut')) ? entryHours(e, d) : '';
+      b += `<div class="p-custom"><input id="p-customH" type="number" step="0.25" min="0" inputmode="decimal" placeholder="CUSTOM HOURS" value="${cur !== '' && !(e && e.full) ? cur : ''}" aria-label="Custom hours"><button type="button" class="p-btn" data-act="custom">Set hours</button></div>`;
+    }
+    if (e && e.t === 'hol') b += '<p class="p-note">PAID HOLIDAYS USE NO PTO. MARK IT AS A WORKING DAY IF THE OFFICE IS OPEN.</p>';
+    if (e && e.t === 'shut') b += '<p class="p-note">OFFICE CLOSED. COVERING IT USES PTO; LEAVING IT UNPAID KEEPS YOUR BALANCE.</p>';
+    sheetRoot.innerHTML = b + '</div>';
+    fitSheet();
+  }
+
+  // keep the dialog inside the monitor: size it to the part of the CRT screen currently in view
+  function fitSheet() {
+    const scr = document.querySelector('.screen');
+    if (!scr || !openKey) return;
+    const r = scr.getBoundingClientRect();
+    const top = Math.max(r.top, 0), bottom = Math.min(r.bottom, window.innerHeight);
+    const st = sheetRoot.style;
+    st.setProperty('--vl', r.left + 'px');
+    st.setProperty('--vw', r.width + 'px');
+    st.setProperty('--vt', top + 'px');
+    st.setProperty('--vh', Math.max(bottom - top, 0) + 'px');
+  }
+
+  function closeSheet() {
+    const k = openKey;
+    openKey = null; render();
+    const cell = host.querySelector(`[data-k="${k}"]`);
+    if (cell) cell.focus({ preventScroll: true });
+  }
+
+  function act(a) {
+    const k = openKey, e = S.days[k], name = e && e.n;
+    if (a === 'close') { closeSheet(); return; }
+    if (a === 'full')            S.days[k] = { t: 'pto', full: true };
+    else if (a === 'half')       S.days[k] = { t: 'pto', h: r2(fullH(parse(k)) / 2) };
+    else if (a === 'clear')      delete S.days[k];
+    else if (a === 'addhol')     S.days[k] = { t: 'hol', n: 'Company holiday' };
+    else if (a === 'holoff')     S.days[k] = { t: 'holoff', n: name };
+    else if (a === 'holon')      S.days[k] = { t: 'hol', n: name };
+    else if (a === 'shutfull')   S.days[k] = { t: 'shut', full: true, n: name };
+    else if (a === 'shutunpaid') S.days[k] = { t: 'shut', h: 0, n: name };
+    else if (a === 'custom') {
+      const v = parseFloat(document.getElementById('p-customH').value);
+      if (isNaN(v) || v < 0) return;
+      if (e && e.t === 'shut') S.days[k] = { t: 'shut', h: r2(v), n: name };
+      else if (v === 0) delete S.days[k];
+      else S.days[k] = { t: 'pto', h: r2(v) };
+    }
+    if (name && S.days[k] && !S.days[k].n) S.days[k].n = name;
+    openKey = null; changed();
+  }
+
+  function changed() {
+    S.rev = (S.rev || 1) + 1;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {}
+    if (host && !host.hidden) render();
+  }
+
+  // ── EVENTS (delegated once; render() replaces the markup, not the host) ──
+  if (host) {
+    host.addEventListener('click', e => {
+      const day = e.target.closest('button.p-day');
+      if (day) {
+        openKey = day.dataset.k; render();
+        const first = sheetRoot.querySelector('.p-btn'); if (first) first.focus();
+        return;
+      }
+      const jump = e.target.closest('[data-jump]');
+      if (jump) {
+        e.preventDefault();
+        const t = document.getElementById(jump.dataset.jump);
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      if (e.target.closest('#p-reset')) {
+        if (!confirmReset) { confirmReset = true; render(); return; }
+        const rev = S.rev; S = clone(DEFAULT); S.rev = rev; confirmReset = false; changed(); return;
+      }
+      if (e.target.closest('#p-reset-cancel')) { confirmReset = false; render(); }
+    });
+    host.addEventListener('change', e => {
+      const f = e.target.dataset && e.target.dataset.f;
+      if (!f) return;
+      const v = e.target.value;
+      if (f === 'firstPay') { if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; S[f] = v; }
+      else {
+        const n = parseFloat(v);
+        if (isNaN(n) || n < 0) { e.target.value = S[f]; return; }
+        S[f] = n;
+      }
+      changed();
+    });
+  }
+  sheetRoot.addEventListener('click', e => {
+    const a = e.target.closest('[data-act]');
+    if (a) act(a.dataset.act);
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && openKey) closeSheet(); });
+  window.addEventListener('scroll', fitSheet, { passive: true });
+  window.addEventListener('resize', fitSheet);
+
+  // ── API FOR THE TIMECARD ──
+  // mode: 'hol' paid holiday · 'pto' full-day PTO (incl. shutdown covered by PTO) · 'off' unpaid shutdown
+  //       'partial' part-day PTO (hours = credit) · 'none' ordinary working day (working = holiday marked as worked)
+  function getMode(k) {
+    const e = S.days[k], d = parse(k), name = (e && e.n) || '';
+    if (!e) return { mode: 'none', hours: 0, name, working: false };
+    if (e.t === 'hol')    return { mode: 'hol', hours: 0, name, working: false };
+    if (e.t === 'holoff') return { mode: 'none', hours: 0, name, working: true };
+    const h = entryHours(e, d);
+    if (e.t === 'shut' && h === 0) return { mode: 'off', hours: 0, name, working: false };
+    if (h >= fullH(d) - 0.001)     return { mode: 'pto', hours: h, name, working: false };
+    return { mode: h > 0 ? 'partial' : 'none', hours: h, name, working: false };
+  }
+  // The timecard's [HOL]/[PTO] buttons write here, so the planner stays the source of truth.
+  // Turning a button off restores the day's built-in nature (a seeded holiday becomes "working", a shutdown becomes unpaid).
+  function setMode(k, mode) {
+    const e = S.days[k], base = DEFAULT.days[k];
+    const name = (e && e.n) || (base && base.n) || '';
+    const shut = (e && e.t === 'shut') || (base && base.t === 'shut');
+    const named = o => { if (name) o.n = name; return o; };
+    if (mode === 'hol')                    S.days[k] = { t: 'hol', n: name || 'Company holiday' };
+    else if (mode === 'pto')               S.days[k] = named(shut ? { t: 'shut', full: true } : { t: 'pto', full: true });
+    else if (base && base.t === 'hol')     S.days[k] = { t: 'holoff', n: base.n };
+    else if (shut)                         S.days[k] = named({ t: 'shut', h: 0 });
+    else                                   delete S.days[k];
+    changed();
+  }
+
+  return { render, getMode, setMode };
+})();
+</script>
 <script>
 // ── CONFIG ──
 const DAYS_CONFIG = [
@@ -1197,7 +1751,10 @@ DAYS_CONFIG.forEach((day, i) => {
   dc.id = `card-${i}`;
   dc.innerHTML = `
     <div class="day-top">
-      <span class="day-name">${day.name}</span>
+      <div class="day-id">
+        <span class="day-name">${day.name}</span>
+        <span class="day-date" id="date-${i}"></span>
+      </div>
       <div class="day-btns">
         <button class="hol-btn" data-day="${i}" aria-pressed="false" title="Mark as a paid holiday — credits 8.00H, hides clock in/out">[HOL]</button>
         <button class="pto-btn" data-day="${i}" aria-pressed="false" title="Mark as PTO — credits your normal hours for this day">[PTO]</button>
@@ -1206,6 +1763,7 @@ DAYS_CONFIG.forEach((day, i) => {
     </div>
     <div class="holiday-display" id="hol-display-${i}">▓ HOLIDAY — 8.00H ▓</div>
     <div class="pto-display" id="pto-display-${i}">▓ PTO — ${DAYS_CONFIG[i].baseTarget.toFixed(2)}H ▓</div>
+    <div class="off-display" id="off-display-${i}">▓ SHUTDOWN — UNPAID ▓</div>
     <div class="away-block" id="away-block-${i}">
       <div class="away-header">
         <span class="away-title">▸ AWAY FROM → TO</span>
@@ -1261,6 +1819,9 @@ function isHolidayDay(i) {
 function isPtoDay(i) {
   return !!document.querySelector(`.pto-btn[data-day="${i}"]`)?.classList.contains('active');
 }
+function isOffDay(i) {
+  return document.getElementById(`card-${i}`).classList.contains('is-off');
+}
 function isAwayDay(i) {
   return !!document.querySelector(`.away-btn[data-day="${i}"]`)?.classList.contains('active');
 }
@@ -1280,6 +1841,7 @@ function setPressed(el, active) {
 
 // per-day effective target (accounts for Friday holiday ripple on Mon–Thu)
 function effectiveTarget(i) {
+  if (isOffDay(i)) return 0; // unpaid shutdown: nothing owed
   if (isPtoDay(i)) return DAYS_CONFIG[i].baseTarget; // PTO credits the day's normal hours (7H on Friday)
   if (isHolidayDay(i)) {
     if (i === 4) return HOLIDAY_HOURS;
@@ -1333,7 +1895,7 @@ function updateMascot(diff) {
   lineB.textContent = text[1];
 }
 
-// ── SHARED HELPER: restore a day to normal (times visible, no holiday/pto) ──
+// ── SHARED HELPER: restore a day to normal (times visible, no holiday/pto/shutdown) ──
 function clearDayOverride(i) {
   if (savedTimes[i]) {
     document.getElementById(`in-${i}`).value  = savedTimes[i].inV;
@@ -1344,60 +1906,43 @@ function clearDayOverride(i) {
   document.getElementById(`bottom-${i}`).style.display      = '';
   document.getElementById(`hol-display-${i}`).style.display = 'none';
   document.getElementById(`pto-display-${i}`).style.display = 'none';
+  document.getElementById(`off-display-${i}`).style.display = 'none';
   document.getElementById(`away-block-${i}`).style.display  = '';
-  document.getElementById(`card-${i}`).classList.remove('is-holiday', 'is-pto');
+  document.getElementById(`card-${i}`).classList.remove('is-holiday', 'is-pto', 'is-off');
   setPressed(document.querySelector(`.hol-btn[data-day="${i}"]`), false);
   setPressed(document.querySelector(`.pto-btn[data-day="${i}"]`), false);
 }
 
+// a day is in exactly one mode: 'none' | 'hol' | 'pto' | 'off' (unpaid shutdown)
+function dayMode(i) {
+  const cl = document.getElementById(`card-${i}`).classList;
+  return cl.contains('is-holiday') ? 'hol' : cl.contains('is-pto') ? 'pto' : cl.contains('is-off') ? 'off' : 'none';
+}
+function setDayMode(i, mode) {
+  clearDayOverride(i);
+  if (mode === 'none') return;
+  savedTimes[i] = {
+    inV:  document.getElementById(`in-${i}`).value,
+    outV: document.getElementById(`out-${i}`).value,
+  };
+  document.getElementById(`times-${i}`).style.display      = 'none';
+  document.getElementById(`bottom-${i}`).style.display     = 'none';
+  document.getElementById(`away-block-${i}`).style.display = 'none';
+  document.getElementById(`${mode}-display-${i}`).style.display = 'block';
+  document.getElementById(`card-${i}`).classList.add({ hol: 'is-holiday', pto: 'is-pto', off: 'is-off' }[mode]);
+  if (mode !== 'off') setPressed(document.querySelector(`.${mode}-btn[data-day="${i}"]`), true);
+}
+
 // ── HOLIDAY / PTO TOGGLE ──
+// The planner is the source of truth: the buttons write to it, then the week re-syncs from it.
 container.addEventListener('click', e => {
-  // holiday button
-  const holBtn = e.target.closest('.hol-btn');
-  if (holBtn) {
-    const i = parseInt(holBtn.dataset.day, 10);
-    const turningOn = !holBtn.classList.contains('active');
-
-    if (turningOn) {
-      clearDayOverride(i);   // dismiss PTO if active
-      savedTimes[i] = {
-        inV:  document.getElementById(`in-${i}`).value,
-        outV: document.getElementById(`out-${i}`).value,
-      };
-      document.getElementById(`times-${i}`).style.display       = 'none';
-      document.getElementById(`bottom-${i}`).style.display      = 'none';
-      document.getElementById(`away-block-${i}`).style.display  = 'none';
-      document.getElementById(`hol-display-${i}`).style.display = 'block';
-      document.getElementById(`card-${i}`).classList.add('is-holiday');
-      setPressed(holBtn, true);
-    } else {
-      clearDayOverride(i);
-    }
-    saveState(); update(); return;
-  }
-
-  // PTO button
-  const ptoBtn = e.target.closest('.pto-btn');
-  if (ptoBtn) {
-    const i = parseInt(ptoBtn.dataset.day, 10);
-    const turningOn = !ptoBtn.classList.contains('active');
-
-    if (turningOn) {
-      clearDayOverride(i);   // dismiss holiday if active
-      savedTimes[i] = {
-        inV:  document.getElementById(`in-${i}`).value,
-        outV: document.getElementById(`out-${i}`).value,
-      };
-      document.getElementById(`times-${i}`).style.display       = 'none';
-      document.getElementById(`bottom-${i}`).style.display      = 'none';
-      document.getElementById(`away-block-${i}`).style.display  = 'none';
-      document.getElementById(`pto-display-${i}`).style.display = 'block';
-      document.getElementById(`card-${i}`).classList.add('is-pto');
-      setPressed(ptoBtn, true);
-    } else {
-      clearDayOverride(i);
-    }
-    saveState(); update(); return;
+  const modeBtn = e.target.closest('.hol-btn, .pto-btn');
+  if (modeBtn) {
+    const i = parseInt(modeBtn.dataset.day, 10);
+    const mode = modeBtn.classList.contains('hol-btn') ? 'hol' : 'pto';
+    PTO.setMode(weekKeys()[i], modeBtn.classList.contains('active') ? 'none' : mode);
+    syncFromPlanner();
+    return;
   }
 
   // lunch button
@@ -1460,6 +2005,12 @@ function update() {
       return;
     }
 
+    if (isOffDay(i)) {
+      pill.textContent = 'OFF';
+      pill.className   = 'pill pill-off';
+      return;
+    }
+
     const inV  = document.getElementById(`in-${i}`).value;
     const outV = document.getElementById(`out-${i}`).value;
     if (!inV || !outV) { pill.innerHTML = '–'; pill.className = 'pill pill-none'; return; }
@@ -1469,16 +2020,17 @@ function update() {
     const awayMins  = isAwayDay(i) ? getAwayMins(i) : 0;
     const worked    = (roundQ(toMin(outV)) - roundQ(toMin(inV)) - lunch - awayMins) / 60;
     if (worked <= 0) { pill.innerHTML = 'ERR'; pill.className = 'pill pill-short'; return; }
-    total += worked;
+    const credit = partialPto[i]; // part-day PTO planned for this date
+    total += worked + credit;
 
-    const delta = worked - eTarget;
+    const delta = worked + credit - eTarget;
     pill.className = 'pill ' + (Math.abs(delta) < 0.01 ? 'pill-ok' : delta < 0 ? 'pill-short' : 'pill-over');
-    if (awayMins > 0) {
-      const awayH = (awayMins / 60).toFixed(2);
-      pill.innerHTML = `<span class="pill-inner"><span>${worked.toFixed(2)}H</span><span class="pill-sub">-${awayH}</span></span>`;
-    } else {
-      pill.innerHTML = worked.toFixed(2) + 'H';
-    }
+    const subs = [];
+    if (awayMins > 0) subs.push(`-${(awayMins / 60).toFixed(2)}`);
+    if (credit > 0)   subs.push(`<span style="color:#ffaa00">+${credit.toFixed(2)} PTO</span>`);
+    pill.innerHTML = subs.length
+      ? `<span class="pill-inner"><span>${worked.toFixed(2)}H</span><span class="pill-sub">${subs.join(' ')}</span></span>`
+      : worked.toFixed(2) + 'H';
   });
 
   const diff   = total - wTarget;
@@ -1524,6 +2076,10 @@ function updateBanner() {
       lines.push(`${DAYS_CONFIG[i].name} PTO ACTIVE — 8.25H CREDITED. WEEK ON TARGET.`);
     }
   }
+  for (let i = 0; i < 5; i++) {
+    if (isOffDay(i)) lines.push(`${DAYS_CONFIG[i].name} SHUTDOWN — UNPAID. TARGET REDUCED.`);
+    if (partialPto[i] > 0) lines.push(`${DAYS_CONFIG[i].name} PLANNED PTO — ${partialPto[i].toFixed(2)}H CREDITED TO THIS DAY.`);
+  }
   if (fridayIsHoliday()) {
     lines.push('FRIDAY HOLIDAY ACTIVE — LEAVE AT 17:00 MON–THU');
   }
@@ -1544,6 +2100,8 @@ function updateBanner() {
 function saveState() {
   try {
     const state = {
+      weekStart: pendingRollover ? loadedWeek : weekKeys()[0],
+      synced: true,
       days: DAYS_CONFIG.map((_, i) => ({
         inV:      document.getElementById(`in-${i}`).value,
         outV:     document.getElementById(`out-${i}`).value,
@@ -1566,6 +2124,7 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const state = JSON.parse(raw);
+    hadState = true; loadedWeek = state.weekStart || null; loadedSynced = !!state.synced;
     state.days.forEach((d, i) => {
       document.getElementById(`in-${i}`).value  = d.inV  || DAYS_CONFIG[i].defaultIn;
       document.getElementById(`out-${i}`).value = d.outV || DAYS_CONFIG[i].defaultOut;
@@ -1574,25 +2133,8 @@ function loadState() {
       const lb = document.querySelector(`.lunch-btn[data-day="${i}"][data-val="${d.lunch}"]`);
       setPressed(lb, true);
 
-      if (d.holiday) {
-        if (d.savedIn !== null) savedTimes[i] = { inV: d.savedIn, outV: d.savedOut };
-        const hb = document.querySelector(`.hol-btn[data-day="${i}"]`);
-        setPressed(hb, true);
-        document.getElementById(`times-${i}`).style.display       = 'none';
-        document.getElementById(`bottom-${i}`).style.display      = 'none';
-        document.getElementById(`away-block-${i}`).style.display  = 'none';
-        document.getElementById(`hol-display-${i}`).style.display = 'block';
-        document.getElementById(`card-${i}`).classList.add('is-holiday');
-      } else if (d.pto) {
-        if (d.savedIn !== null) savedTimes[i] = { inV: d.savedIn, outV: d.savedOut };
-        const pb = document.querySelector(`.pto-btn[data-day="${i}"]`);
-        setPressed(pb, true);
-        document.getElementById(`times-${i}`).style.display       = 'none';
-        document.getElementById(`bottom-${i}`).style.display      = 'none';
-        document.getElementById(`away-block-${i}`).style.display  = 'none';
-        document.getElementById(`pto-display-${i}`).style.display = 'block';
-        document.getElementById(`card-${i}`).classList.add('is-pto');
-      }
+      // HOL/PTO come back from the planner (initWeek / syncFromPlanner); this only restores pre-planner flags
+      setDayMode(i, d.holiday ? 'hol' : d.pto ? 'pto' : 'none');
 
       if (d.away) {
         const ab = document.querySelector(`.away-btn[data-day="${i}"]`);
@@ -1628,8 +2170,8 @@ resetBtn.addEventListener('click', () => {
   resetTimer = setTimeout(cancelReset, 5000);
 });
 confirmNo.addEventListener('click', cancelReset);
-confirmYes.addEventListener('click', () => {
-  cancelReset();
+// clears times, lunch and away; planned HOL/PTO/shutdown days come straight back from the planner
+function resetWeekData() {
   localStorage.removeItem(STORAGE_KEY);
   Object.keys(savedTimes).forEach(k => delete savedTimes[k]);
 
@@ -1650,10 +2192,11 @@ confirmYes.addEventListener('click', () => {
     document.getElementById(`away-block-${i}`).classList.remove('visible');
     document.getElementById(`away-in-${i}`).value             = '';
     document.getElementById(`away-out-${i}`).value            = '';
-    document.getElementById(`card-${i}`).classList.remove('is-holiday', 'is-pto');
+    clearDayOverride(i);
   });
-  update();
-});
+  syncFromPlanner();
+}
+confirmYes.addEventListener('click', () => { cancelReset(); resetWeekData(); });
 
 // ── THEME TOGGLE ──
 const monitor     = document.getElementById('monitor');
@@ -1706,12 +2249,13 @@ function runBootSequence(onComplete) {
     { type: 'normal', text: 'MEMORY TEST 640K .........................<span class="ok">PASS</span>' },
     { type: 'normal', text: 'CLOCK SUBSYSTEM ..........................<span class="ok">OK</span>' },
     { type: 'normal', text: 'STORAGE MODULE ...........................<span class="ok">OK</span>' },
+    { type: 'normal', text: 'PTO PLANNER MODULE .......................<span class="ok">OK</span>' },
     { type: 'normal', text: 'USER DATA FOUND ..........................<span class="ok">LOADED</span>' },
     { type: 'gap' },
     { type: 'title',  text: 'TIMECARD HELPER v3.0' },
     { type: 'ready',  text: '> SYSTEM READY' },
   ];
-  const timings = [80, 230, 410, 580, 750, 900, 1000, 1100, 1320];
+  const timings = [80, 220, 380, 530, 680, 800, 930, 1020, 1110, 1320];
 
   // cold power-on: raster snaps in as a bright line and unrolls (boot-tube-flash,
   // ~680ms via the overlay's own ::after), then the auto-degauss thunk fires as it
@@ -1806,13 +2350,100 @@ function runBootSequence(onComplete) {
   }, TEXT_OFFSET + 1750);
 }
 
+// ── WEEK + PLANNER SYNC ──
+const TAB_KEY    = 'timecard_tab';
+const MONTH_ABBR = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const partialPto = [0, 0, 0, 0, 0];   // part-day PTO hours per row, from the planner
+let loadedWeek = null, hadState = false, loadedSynced = false, pendingRollover = false;
+
+const pad2     = n => String(n).padStart(2, '0');
+const localKey = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const fmtKey   = k => { const [, m, d] = k.split('-').map(Number); return `${MONTH_ABBR[m - 1]} ${d}`; };
+
+// the rows always show the current calendar week (Mon–Fri)
+function weekKeys() {
+  const now = new Date();
+  const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+  return DAYS_CONFIG.map((_, i) => localKey(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i)));
+}
+
+function syncFromPlanner() {
+  const keys = weekKeys(), today = localKey(new Date());
+  keys.forEach((k, i) => {
+    const m = PTO.getMode(k);
+    partialPto[i] = m.mode === 'partial' ? m.hours : 0;
+    const want = (m.mode === 'hol' || m.mode === 'pto' || m.mode === 'off') ? m.mode : 'none';
+    if (dayMode(i) !== want) setDayMode(i, want);
+    let label = fmtKey(k);
+    if (m.name && (want !== 'none' || m.working)) label += ` · ${m.name.toUpperCase()}${m.working ? ' (WORKING)' : ''}`;
+    document.getElementById(`date-${i}`).textContent = label;
+    document.getElementById(`card-${i}`).classList.toggle('is-today', k === today);
+  });
+  document.getElementById('weekLabel').textContent = `WEEK OF ${fmtKey(keys[0])}`;
+  saveState(); update();
+}
+
+function initWeek() {
+  const keys = weekKeys();
+  if (hadState && !loadedSynced) {
+    // first run with the planner: carry over HOL/PTO already marked on the timecard
+    keys.forEach((k, i) => {
+      const m = dayMode(i);
+      if ((m === 'hol' || m === 'pto') && PTO.getMode(k).mode === 'none') PTO.setMode(k, m);
+    });
+  }
+  if (hadState && loadedWeek && loadedWeek !== keys[0]) {
+    pendingRollover = true;
+    const prompt = document.getElementById('week-prompt');
+    prompt.innerHTML = `<div class="wp-text">NEW WEEK DETECTED — TIMES ARE STILL FROM THE WEEK OF ${fmtKey(loadedWeek)}.</div>
+      <div class="wp-btns"><button class="wp-btn" data-wp="roll">[ ROLL OVER ] RESET TIMES</button><button class="wp-btn keep" data-wp="keep">[ KEEP ] USE SAVED TIMES</button></div>`;
+    prompt.classList.add('active');
+  }
+}
+
+document.getElementById('week-prompt').addEventListener('click', e => {
+  const b = e.target.closest('[data-wp]');
+  if (!b) return;
+  pendingRollover = false;
+  if (b.dataset.wp === 'roll') resetWeekData(); else saveState();
+  e.currentTarget.classList.remove('active');
+  e.currentTarget.innerHTML = '';
+});
+
+// ── TABS ──
+function showTab(name, animate = true) {
+  const pto = name === 'pto';
+  document.getElementById('view-timecard').hidden = pto;
+  document.getElementById('view-pto').hidden      = !pto;
+  document.getElementById('weekLabel').hidden     = pto;
+  document.querySelectorAll('.tab').forEach(t => {
+    const on = t.dataset.tab === name;
+    t.setAttribute('aria-selected', String(on));
+    t.tabIndex = on ? 0 : -1;
+  });
+  if (pto) PTO.render(); else syncFromPlanner();
+  try { localStorage.setItem(TAB_KEY, name); } catch (e) {}
+  if (animate) { window.scrollTo(0, 0); runDegauss(); }
+}
+document.querySelector('.tabs').addEventListener('click', e => {
+  const t = e.target.closest('.tab');
+  if (t && t.getAttribute('aria-selected') !== 'true') showTab(t.dataset.tab);
+});
+document.querySelector('.tabs').addEventListener('keydown', e => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const next = document.querySelector('.tab[aria-selected="false"]');
+  showTab(next.dataset.tab);
+  next.focus();
+});
+
 // ── INIT ──
 applyTheme(localStorage.getItem(THEME_KEY) || 'tan');
 loadState();
+initWeek();
 document.querySelectorAll('input[type=time]').forEach(el =>
   el.addEventListener('change', () => { saveState(); update(); })
 );
-update();
+showTab(localStorage.getItem(TAB_KEY) === 'pto' ? 'pto' : 'timecard', false);
 
 if (shouldShowBoot()) {
   markBootShown();
