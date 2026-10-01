@@ -1141,40 +1141,40 @@
   .p-legend span { display: inline-flex; align-items: center; gap: 6px; }
   .p-sw { width: 10px; height: 10px; display: inline-block; border: 1px solid; }
 
-  .p-chips { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-  .p-chips::-webkit-scrollbar { display: none; }
-  .p-chips a {
-    flex: none;
-    font-family: 'VT323', monospace;
-    font-size: 17px;
-    letter-spacing: 1px;
-    padding: 0 9px;
-    border: 1px solid #1a5c1a;
-    background: #000;
-    color: #1a8c1a;
-    text-decoration: none;
-  }
-  .p-chips a:hover { border-color: #33ff3355; color: #33ff33; }
-  .p-chips a.on { border-color: #33ff33; color: #33ff33; background: #001a00; box-shadow: 0 0 6px #33ff3333; }
-  .p-chips a.alt { border-color: #886600; color: #ffaa00; }
-  .p-chips a:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
 
-  .p-month { border: 1px solid #164416; border-left: 2px solid #249724; background: rgba(0,18,0,0.42); scroll-margin-top: 12px; }
-  .p-month.open { border-left-color: #33ff33; box-shadow: 0 0 10px #33ff3318; }
-  .p-mhead {
-    display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 12px;
-    width: 100%; margin: 0; padding: 9px 10px;
-    border: 0; background: none; color: inherit; font: inherit; text-align: left; text-shadow: inherit; cursor: pointer;
-  }
-  .p-month.open .p-mhead { padding-bottom: 6px; }
-  .p-mhead:hover .p-mname { text-shadow: 0 0 8px #33ff3388; }
-  .p-mhead:focus-visible { outline: 1px solid #33ff33; outline-offset: -3px; }
-  .p-mname { font-family: 'VT323', monospace; font-size: 21px; color: #33ff33; letter-spacing: 2px; text-shadow: 0 0 4px #33ff3355; }
-  .p-mname::before { content: '▸ '; color: #1a8c1a; }
-  .p-month.open .p-mname::before { content: '▾ '; color: #33ff33; }
-  .p-mb { font-size: 10px; color: #1a8c1a; letter-spacing: 0.5px; white-space: nowrap; margin-left: auto; padding-right: 2px; }
+  .p-month { border: 1px solid #164416; border-left: 2px solid #249724; background: rgba(0,18,0,0.42); padding: 9px 10px 10px; }
+  .p-mb { font-size: 10px; color: #1a8c1a; letter-spacing: 0.5px; white-space: nowrap; }
+  .p-mbline { margin-bottom: 7px; text-align: right; }
   .p-mb.neg { color: #ff4422; text-shadow: 0 0 5px #ff442255; }
-  .p-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; margin: 0 10px 10px; }
+  .p-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+
+  .p-subtabs { display: flex; gap: 6px; }
+  .p-subtab {
+    flex: 1; font-family: 'VT323', monospace; font-size: 19px; letter-spacing: 2px; padding: 3px 4px;
+    border: 1px solid #1a5c1a; background: #000; color: #1a8c1a; cursor: pointer; transition: all 0.15s;
+  }
+  .p-subtab:hover { border-color: #33ff3355; color: #33ff3399; }
+  .p-subtab[aria-selected="true"] { border-color: #33ff33; color: #33ff33; background: #001a00; box-shadow: 0 0 6px #33ff3333; text-shadow: 0 0 6px #33ff3388; }
+  .p-subtab:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
+
+  .p-pager { display: flex; gap: 6px; align-items: center; }
+  .p-arrow { font-family: 'VT323', monospace; font-size: 26px; line-height: 1; padding: 0 14px 3px; border: 1px solid #1a5c1a; background: #000; color: #33ff33; cursor: pointer; }
+  .p-arrow:hover:not(:disabled) { border-color: #33ff3377; background: #001a00; }
+  .p-arrow:disabled { color: #0f3d0f; border-color: #0f2e0f; cursor: default; }
+  .p-arrow:focus-visible, .p-mtoggle:focus-visible, .p-mitem:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
+  .p-pname { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'VT323', monospace; font-size: 24px; letter-spacing: 3px; color: #fff; text-shadow: 0 0 8px #33ff3399; white-space: nowrap; }
+  .p-mtoggle { font-family: 'Share Tech Mono', monospace; font-size: 11px; line-height: 1; padding: 5px 7px; border: 1px solid #1a5c1a; background: #000; color: #33ff33; text-shadow: none; cursor: pointer; flex: none; }
+  .p-mtoggle:hover, .p-mtoggle[aria-expanded="true"] { border-color: #33ff33; background: #001a00; box-shadow: 0 0 6px #33ff3333; }
+  .p-mlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; padding: 6px; border: 1px solid #164416; border-left: 2px solid #33ff33; background: rgba(0,18,0,0.7); }
+  .p-mitem { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 7px 8px; border: 1px solid #0f2e0f; background: #000; color: #33ff33; font-family: 'VT323', monospace; font-size: 18px; letter-spacing: 1px; cursor: pointer; text-align: left; min-width: 0; }
+  .p-mitem b { font-family: 'Share Tech Mono', monospace; font-weight: normal; font-size: 10px; letter-spacing: 0; color: #1a8c1a; white-space: nowrap; }
+  .p-mitem b em { font-style: normal; color: #ff4422; text-shadow: 0 0 5px #ff442266; }
+  .p-mitem b.neg { color: #ff4422; text-shadow: 0 0 5px #ff442255; }
+  .p-mitem:hover { border-color: #33ff3366; }
+  .p-mitem.now span { text-decoration: underline; text-underline-offset: 2px; }
+  .p-mitem.sel { border-color: #33ff33; background: #001a00; box-shadow: 0 0 6px #33ff3333; }
+  .p-mitem.p-mnow { grid-column: 1 / -1; border-color: #cc9900; color: #ffaa00; }
+  .p-mitem.p-mnow b { color: #886600; }
   .p-dow { font-size: 9px; color: #1a8c1a; text-align: center; letter-spacing: 1px; padding-bottom: 2px; }
   .p-day {
     position: relative;
@@ -1213,9 +1213,6 @@
   .p-pay { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 5px #fff; }
   .p-cap { position: absolute; top: 3px; right: 4px; font-size: 8px; color: #ffaa00; text-shadow: 0 0 5px #ffaa0088; letter-spacing: 0.5px; }
 
-  .p-settings { border: 1px solid #164416; border-left: 2px solid #249724; background: rgba(0,18,0,0.42); padding: 8px 11px; }
-  .p-settings summary { cursor: pointer; font-family: 'VT323', monospace; font-size: 19px; letter-spacing: 2px; color: #33ff33; }
-  .p-settings summary:focus-visible { outline: 1px solid #33ff33; outline-offset: 2px; }
   .p-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 10px; }
   .p-form label { display: flex; flex-direction: column; gap: 3px; font-size: 9px; color: #1a8c1a; letter-spacing: 1px; text-transform: uppercase; min-width: 0; }
   .p-form input, .p-custom input {
@@ -1337,10 +1334,12 @@
     .p-flow { font-size: 18px; gap: 6px; letter-spacing: 0; }
     .tab { font-size: 16px; padding: 2px 8px 1px; letter-spacing: 1px; }
     .week-label { flex-basis: 100%; margin-left: 0; }
-    .p-mhead { padding: 8px 7px; }
-    .p-mname { font-size: 18px; letter-spacing: 1px; }
+    .p-month { padding: 8px 7px 9px; }
     .p-mb { font-size: 9px; letter-spacing: 0; }
-    .p-grid { gap: 2px; margin: 0 7px 9px; }
+    .p-grid { gap: 2px; }
+    .p-pname { font-size: 20px; letter-spacing: 1px; gap: 6px; }
+    .p-mitem { font-size: 16px; padding: 7px 6px; }
+    .p-subtab { font-size: 17px; letter-spacing: 1px; }
     .p-day { min-height: 46px; padding: 2px 3px; }
     .p-dn { font-size: 15px; }
     .p-tag { font-size: 8px; letter-spacing: 0; }
@@ -1525,7 +1524,10 @@ window.PTO = (() => {
   if (!S.su && S.start != null) S.su = 1;
 
   let openKey = null, confirmReset = false;
-  let openMonth = null;   // 'YYYY-MM' of the expanded month; '' = all collapsed; null = pick the default (current month)
+  let openMonth = null;   // 'YYYY-MM' shown in the calendar; null = default to the current month
+  let subTab = 'cal';     // 'cal' | 'set'
+  let monthListOpen = false;   // quick-pick month list under the pager
+  let monthIds = [];
   const host = document.getElementById('view-pto');
   const sheetRoot = document.createElement('div');
   document.body.appendChild(sheetRoot);
@@ -1736,35 +1738,59 @@ window.PTO = (() => {
       <div class="p-stat${fTotal > 0 ? ' warn' : ''}"><span class="k">Dec 31 balance</span><span class="v">${L.decBefore == null ? '-' : fmt(L.decBefore) + 'H'}</span><span class="n">${fTotal > 0 ? `${fmt(fTotal)}H OVER THE ${fmt(S.cap)}H CAP, LOST JAN 1` : `UNDER THE ${fmt(S.cap)}H ROLLOVER CAP`}</span></div>
       <div class="p-stat${lowBad ? ' bad' : ''}"><span class="k">Lowest point</span><span class="v">${fmt(L.low.v)}H</span><span class="n">${L.low.k ? niceDate(L.low.k) : ''}${lowBad ? ' · OVERDRAWN' : ''}</span></div>
     </div>`;
-    h += `<div class="p-legend">
-      <span><i class="p-sw" style="background:#0a0800;border-color:#886600"></i>Your PTO</span>
-      <span><i class="p-sw" style="background:#00080d;border:1px dashed #0099cc"></i>Shutdown</span>
-      <span><i class="p-sw" style="background:#002a00;border-color:#33ff3388"></i>Paid holiday</span>
-      <span><i class="p-sw" style="background:#fff;border-color:#fff;border-radius:50%;box-shadow:0 0 5px #fff"></i>Payday</span>
-      <span><i class="p-sw" style="border-color:#ff4422;box-shadow:0 0 5px #ff442266"></i>Below zero</span>
-    </div>`;
 
     const end = parse(S.end), months = [];
     for (let m = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1)); m <= end; m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1))) months.push(m);
-    const ids = months.map(m => key(m).slice(0, 7)), nowId = tk.slice(0, 7);
-    if (openMonth && !ids.includes(openMonth)) openMonth = null;
-    if (openMonth === null) openMonth = ids.includes(nowId) ? nowId : (tk < ids[0] ? ids[0] : ids[ids.length - 1]);
-    const chip = (id, label, extra) => `<a href="#pm${id}" data-month-jump="${id}"${id === openMonth ? ' class="on" aria-current="true"' : ''}${extra || ''}>${label}</a>`;
-    h += `<nav class="p-chips" aria-label="Jump to month">${ids.includes(nowId) ? chip(nowId, 'TODAY').replace('<a ', '<a data-today ') : ''}${months.map(m => chip(key(m).slice(0, 7), `${MONTHS[m.getUTCMonth()].slice(0, 3)} ${String(m.getUTCFullYear()).slice(2)}`)).join('')}<a href="#p-settings" class="alt" data-settings-jump>SETTINGS</a></nav>`;
-
-    months.forEach(m => {
+    // one summary per month feeds the year strip and the pager
+    const sums = months.map(m => {
       const y = m.getUTCFullYear(), mo = m.getUTCMonth(), last = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
       const lastInfo = L.days[key(new Date(Date.UTC(y, mo, last)))];
-      let mUsed = 0;
-      for (let i = 1; i <= last; i++) { const ii = L.days[key(new Date(Date.UTC(y, mo, i)))]; if (ii) mUsed += ii.h; }
-      const id = key(m).slice(0, 7), isOpen = id === openMonth, endBal = lastInfo ? lastInfo.bal : null;
-      h += `<section class="p-month${isOpen ? ' open' : ''}" id="pm${id}"><button type="button" class="p-mhead" data-month="${id}" aria-expanded="${isOpen}" aria-controls="pg${id}"><span class="p-mname">${MONTHS[mo]} ${y}</span><span class="p-mb${endBal != null && endBal < 0 ? ' neg' : ''}">${mUsed ? `-${fmt(mUsed)}H · ` : ''}ENDS ${endBal != null ? fmt(endBal) : '-'}H</span></button>`;
-      if (isOpen) {
-      h += `<div class="p-grid" id="pg${id}">`;
+      let used = 0, dip = false;
+      for (let i = 1; i <= last; i++) { const ii = L.days[key(new Date(Date.UTC(y, mo, i)))]; if (ii) { used += ii.h; if (ii.bal < 0) dip = true; } }
+      return { id: key(m).slice(0, 7), m, y, mo, last, used, dip, end: lastInfo ? lastInfo.bal : null };
+    });
+    monthIds = sums.map(x => x.id);
+    const nowId = tk.slice(0, 7);
+    if (!monthIds.includes(openMonth)) openMonth = monthIds.includes(nowId) ? nowId : (tk < monthIds[0] ? monthIds[0] : monthIds[monthIds.length - 1]);
+    const idx = monthIds.indexOf(openMonth), cur = sums[idx];
+
+    h += `<div class="p-subtabs" role="tablist" aria-label="Planner sections">
+      <button type="button" role="tab" class="p-subtab" id="ptab-cal" data-subtab="cal" aria-selected="${subTab === 'cal'}" aria-controls="p-panel" tabindex="${subTab === 'cal' ? 0 : -1}">[ CALENDAR ]</button>
+      <button type="button" role="tab" class="p-subtab" id="ptab-set" data-subtab="set" aria-selected="${subTab === 'set'}" aria-controls="p-panel" tabindex="${subTab === 'set' ? 0 : -1}">[ SETTINGS ]</button></div>`;
+
+    if (subTab === 'set') {
+      const fld = (lbl, id, v, type) => `<label for="pf_${id}">${lbl}<input id="pf_${id}" data-f="${id}" type="${type || 'number'}" step="0.01" inputmode="decimal" value="${esc(v)}"></label>`;
+      h += `<div class="p-panel" id="p-panel" role="tabpanel" aria-labelledby="ptab-set"><div class="p-form">
+        ${fld('Balance (H)', 'start', S.start)}${fld('Balance as of', 'asOf', S.asOf, 'date')}
+        ${fld('Plan ends', 'end', S.end, 'date')}${fld('Accrual per payday (H)', 'accrual', S.accrual)}
+        ${fld('Rollover cap Jan 1 (H)', 'cap', S.cap)}${fld('First payday', 'firstPay', S.firstPay, 'date')}
+        ${fld('Mon to Thu day (H)', 'hMT', S.hMT)}${fld('Friday day (H)', 'hF', S.hF)}
+        </div><div class="p-row"><button type="button" class="p-btn danger" id="p-reset">${confirmReset ? 'TAP AGAIN TO RESET EVERYTHING' : '[ RESET PLAN ]'}</button>${confirmReset ? '<button type="button" class="p-btn" id="p-reset-cancel">CANCEL</button>' : ''}</div>
+        <p class="p-note">ENTER YOUR REAL BALANCE AND ITS DATE TO RE-SYNC WITH YOUR PAYSTUB; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p>${syncHtml()}</div>`;
+    } else {
+      h += `<div class="p-legend">
+        <span><i class="p-sw" style="background:#0a0800;border-color:#886600"></i>Your PTO</span>
+        <span><i class="p-sw" style="background:#00080d;border:1px dashed #0099cc"></i>Shutdown</span>
+        <span><i class="p-sw" style="background:#002a00;border-color:#33ff3388"></i>Paid holiday</span>
+        <span><i class="p-sw" style="background:#fff;border-color:#fff;border-radius:50%;box-shadow:0 0 5px #fff"></i>Payday</span>
+        <span><i class="p-sw" style="border-color:#ff4422;box-shadow:0 0 5px #ff442266"></i>Below zero</span>
+      </div>`;
+      h += `<div class="p-pager"><button type="button" class="p-arrow" data-page="-1" aria-label="Previous month"${idx === 0 ? ' disabled' : ''}>‹</button>
+        <div class="p-pname"><span aria-live="polite">${MONTHS[cur.mo]} ${cur.y}</span><button type="button" class="p-mtoggle" id="p-mtoggle" data-mtoggle aria-expanded="${monthListOpen}" aria-controls="p-mlist" aria-label="Choose a month">${monthListOpen ? '▴' : '▾'}</button></div>
+        <button type="button" class="p-arrow" data-page="1" aria-label="Next month"${idx === monthIds.length - 1 ? ' disabled' : ''}>›</button></div>`;
+      if (monthListOpen) {
+        // quick pick: jump to any month in one tap; red = ends below zero, "!" = dips below zero during the month
+        const todayItem = monthIds.includes(nowId) && nowId !== openMonth;
+        h += `<div class="p-mlist" id="p-mlist" role="group" aria-label="Choose a month">${todayItem ? `<button type="button" class="p-mitem p-mnow" data-month="${nowId}"><span>TODAY</span><b>${MONTHS[sums[monthIds.indexOf(nowId)].mo].slice(0, 3)} ${sums[monthIds.indexOf(nowId)].y}</b></button>` : ''}${sums.map(x => {
+          const neg = x.end != null && x.end < 0;
+          return `<button type="button" class="p-mitem${x.id === openMonth ? ' sel' : ''}${x.id === nowId ? ' now' : ''}" data-month="${x.id}" aria-current="${x.id === openMonth}" aria-label="${MONTHS[x.mo]} ${x.y}, ends ${x.end != null ? fmt(x.end) : 'n/a'} hours${x.dip ? ', goes below zero' : ''}"><span>${MONTHS[x.mo].slice(0, 3)} ${x.y}</span><b class="${neg ? 'neg' : ''}">${x.dip ? '<em>!</em> ' : ''}${x.end != null ? fmt(x.end) : '-'}H</b></button>`;
+        }).join('')}</div>`;
+      }
+      h += `<section class="p-month" id="p-panel" role="tabpanel" aria-labelledby="ptab-cal"><div class="p-mb p-mbline${cur.end != null && cur.end < 0 ? ' neg' : ''}">${cur.used ? `-${fmt(cur.used)}H USED · ` : ''}ENDS ${cur.end != null ? fmt(cur.end) : '-'}H</div><div class="p-grid">`;
       DOWS.forEach(d => { h += `<div class="p-dow">${d.charAt(0)}</div>`; });
-      for (let j = 0; j < m.getUTCDay(); j++) h += '<div class="p-day empty"></div>';
-      for (let dn = 1; dn <= last; dn++) {
-        const d = new Date(Date.UTC(y, mo, dn)), k = key(d), wd = d.getUTCDay(), info = L.days[k] || {}, e = S.days[k];
+      for (let j = 0; j < cur.m.getUTCDay(); j++) h += '<div class="p-day empty"></div>';
+      for (let dn = 1; dn <= cur.last; dn++) {
+        const d = new Date(Date.UTC(cur.y, cur.mo, dn)), k = key(d), wd = d.getUTCDay(), info = L.days[k] || {}, e = S.days[k];
         if (wd === 0 || wd === 6) { h += `<div class="p-day wk"><span class="p-dn">${dn}</span>${info.pay ? '<i class="p-pay"></i>' : ''}</div>`; continue; }
         if (info.bal === undefined) { h += `<div class="p-day wk"><span class="p-dn">${dn}</span></div>`; continue; }   // outside the plan window
         let cls = 'p-day', tag = '', showBal = false;
@@ -1780,23 +1806,11 @@ window.PTO = (() => {
         const label = `${niceDate(k)}${e && e.n ? ', ' + e.n : ''}${tag ? ', ' + tag : ''}, balance ${fmt(info.bal)} hours`;
         h += `<button type="button" class="${cls}" data-k="${k}" aria-label="${esc(label)}"><span class="p-dn">${dn}</span>${info.cap ? '<span class="p-cap">CAP</span>' : (info.pay ? '<i class="p-pay"></i>' : '')}<span class="p-tag">${esc(tag)}</span><span class="p-bal">${showBal ? fmt(info.bal) : ''}</span></button>`;
       }
-      h += '</div>';
-      }
-      h += '</section>';
-    });
+      h += '</div></section>';
+    }
 
-    const fld = (lbl, id, v, type) => `<label for="pf_${id}">${lbl}<input id="pf_${id}" data-f="${id}" type="${type || 'number'}" step="0.01" inputmode="decimal" value="${esc(v)}"></label>`;
-    h += `<details class="p-settings" id="p-settings"><summary>SETTINGS</summary><div class="p-form">
-      ${fld('Balance (H)', 'start', S.start)}${fld('Balance as of', 'asOf', S.asOf, 'date')}
-      ${fld('Plan ends', 'end', S.end, 'date')}${fld('Accrual per payday (H)', 'accrual', S.accrual)}
-      ${fld('Rollover cap Jan 1 (H)', 'cap', S.cap)}${fld('First payday', 'firstPay', S.firstPay, 'date')}
-      ${fld('Mon to Thu day (H)', 'hMT', S.hMT)}${fld('Friday day (H)', 'hF', S.hF)}
-      </div><div class="p-row"><button type="button" class="p-btn danger" id="p-reset">${confirmReset ? 'TAP AGAIN TO RESET EVERYTHING' : '[ RESET PLAN ]'}</button>${confirmReset ? '<button type="button" class="p-btn" id="p-reset-cancel">CANCEL</button>' : ''}</div>
-      <p class="p-note">ENTER YOUR REAL BALANCE AND ITS DATE TO RE-SYNC WITH YOUR PAYSTUB; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p>${syncHtml()}</details>`;
-
-    const wasOpen = (document.getElementById('p-settings') || {}).open, y0 = window.scrollY;
+    const y0 = window.scrollY;
     host.innerHTML = h;
-    if (wasOpen) document.getElementById('p-settings').open = true;
     window.scrollTo(0, y0);
     renderSheet(L);
   }
@@ -1848,23 +1862,21 @@ window.PTO = (() => {
   const put   = (k, entry) => { S.days[k] = Object.assign(entry, { u: Date.now() }); };
   const clear = k => { S.days[k] = { t: 'none', u: Date.now() }; };
 
-  // open one month (the others fold, so the page stays short) and bring it to the top
-  const scrollOpts = () => ({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-  function focusHeader(id) {
-    const hd = host.querySelector(`[data-month="${id}"]`);
-    if (hd) hd.focus({ preventScroll: true });
+  // one month on screen at a time; the year strip, TODAY and the arrows all land here
+  function showMonth(id, focusSel) {
+    if (!monthIds.includes(id)) return;
+    openMonth = id; monthListOpen = false; render();
+    const el = focusSel && host.querySelector(focusSel);
+    if (el && !el.disabled) el.focus({ preventScroll: true });
   }
-  function showMonth(id) {
-    openMonth = id; render();
-    const sec = document.getElementById('pm' + id);
-    if (sec) sec.scrollIntoView(scrollOpts());
-    focusHeader(id);
+  function stepMonth(delta) {
+    const i = monthIds.indexOf(openMonth) + delta;
+    if (i >= 0 && i < monthIds.length) showMonth(monthIds[i], `[data-page="${delta}"]`);
   }
-  function showSettings() {
-    const st = document.getElementById('p-settings');
-    if (!st) return;
-    st.open = true;
-    st.scrollIntoView(scrollOpts());
+  function showSub(name) {
+    subTab = name; monthListOpen = false; render();
+    const t = document.getElementById(name === 'set' ? 'ptab-set' : 'ptab-cal');
+    if (t) t.focus({ preventScroll: true });
   }
 
   function focusCell(k) {
@@ -1917,18 +1929,20 @@ window.PTO = (() => {
         const first = sheetRoot.querySelector('.p-btn'); if (first) first.focus();
         return;
       }
-      const mj = e.target.closest('[data-month-jump]');
-      if (mj) { e.preventDefault(); showMonth(mj.dataset.monthJump); return; }
-      if (e.target.closest('[data-settings-jump]')) { e.preventDefault(); showSettings(); return; }
-      const mh = e.target.closest('[data-month]');
-      if (mh) {
-        if (openMonth === mh.dataset.month) { openMonth = ''; render(); focusHeader(mh.dataset.month); }   // tap the open month again to fold it
-        else showMonth(mh.dataset.month);
+      const st = e.target.closest('[data-subtab]');
+      if (st) { if (st.dataset.subtab !== subTab) showSub(st.dataset.subtab); return; }
+      if (e.target.closest('[data-mtoggle]')) {
+        monthListOpen = !monthListOpen; render();
+        const target = monthListOpen ? (host.querySelector('.p-mitem.sel') || host.querySelector('.p-mitem')) : document.getElementById('p-mtoggle');
+        if (target) target.focus({ preventScroll: true });
         return;
       }
+      const mb = e.target.closest('[data-month]');
+      if (mb) { showMonth(mb.dataset.month, '#p-mtoggle'); return; }
+      const pg = e.target.closest('[data-page]');
+      if (pg) { stepMonth(parseInt(pg.dataset.page, 10)); return; }
       if (e.target.closest('#p-update')) {
-        const st = document.getElementById('p-settings');
-        st.open = true;
+        subTab = 'set'; render();
         const inp = document.getElementById('pf_start');
         inp.scrollIntoView({ block: 'center' });
         inp.focus(); inp.select();
@@ -1958,6 +1972,23 @@ window.PTO = (() => {
       }
       S.su = Date.now();
       changed();
+    });
+  }
+  if (host) {
+    // swipe the month left/right (mostly-horizontal, ignoring scrolls)
+    let sx = null, sy = null;
+    host.addEventListener('touchstart', e => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+    host.addEventListener('touchend', e => {
+      if (sx === null) return;
+      const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+      if (subTab === 'cal' && !openKey && Math.abs(dx) > 70 && Math.abs(dy) < 35 && e.target.closest('.p-month')) stepMonth(dx < 0 ? 1 : -1);
+    }, { passive: true });
+    host.addEventListener('keydown', e => {
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.closest('.p-subtabs')) showSub(subTab === 'cal' ? 'set' : 'cal');
+      if (e.key === 'Escape' && monthListOpen && !openKey) {
+        monthListOpen = false; render();
+        const t = document.getElementById('p-mtoggle'); if (t) t.focus({ preventScroll: true });
+      }
     });
   }
   sheetRoot.addEventListener('click', e => {
