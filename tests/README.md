@@ -29,6 +29,7 @@ Environment overrides (optional):
 | `planner-ui.test.js` | Month pager, quick-pick month list, swipe, Calendar/Settings sub-tabs, red-month markers, narrow screens |
 | `setup-sync.test.js` | First-launch setup and its validation, two-device sync (merge rules, links, undo), rejection of tampered codes, pre-sync plans |
 | `behavior.test.js` | Blocked storage, week rollover while the app is open, new-week prompt, dialog focus, balance projection and editable plan dates |
+| `mascot.test.js` | Tic's five moods against the week's difference (short 1h/2h/3h, a single over mood, on target), the motion engine running, the HI! wave only when on target or over target, hover wave, tap hop, reduced motion, narrow screens |
 
 ## Notes for writing tests
 
