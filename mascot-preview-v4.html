@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tic Motion Preview v4</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --phosphor: #33ff33;
+    --phosphor-dim: #1a8c1a;
+    --phosphor-line: #1a5c1a;
+    --phosphor-edge: #164416;
+    --phosphor-deep: #001a00;
+    --amber: #ffaa00;
+    --screen: #020e02;
+    --page: #010701;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--page); color: var(--phosphor); font-family: 'Share Tech Mono', ui-monospace, monospace; min-height: 100vh; padding: 24px 16px 48px; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-family: 'VT323', monospace; font-weight: 400; font-size: 34px; letter-spacing: 2px; margin: 0 0 2px; }
+  .sub { color: var(--phosphor-dim); font-size: 12px; letter-spacing: .5px; margin-bottom: 20px; }
+  .sub a { color: var(--phosphor); }
+  h3 { font-family: 'VT323', monospace; font-weight: 400; font-size: 18px; letter-spacing: 2px; margin: 24px 0 8px; color: var(--phosphor-dim); }
+
+  .card { background: var(--screen); border: 1px solid var(--phosphor-edge); border-left: 2px solid var(--phosphor); padding: 12px 14px 16px; }
+  .card h2 { font-family: 'VT323', monospace; font-weight: 400; font-size: 20px; letter-spacing: 2px; margin: 0; display: flex; justify-content: space-between; }
+  .card h2 small { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--phosphor-dim); letter-spacing: .5px; align-self: center; }
+  .stage { display: flex; align-items: flex-end; justify-content: center; height: 320px; }
+
+  .controls { margin: 16px 0 8px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .controls button, .tools button { font: inherit; font-size: 12px; letter-spacing: .5px; background: #000; color: var(--phosphor); border: 1px solid var(--phosphor-line); padding: 8px 12px; cursor: pointer; }
+  .controls button:hover, .tools button:hover { border-color: var(--phosphor); }
+  .controls button[aria-pressed="true"] { background: var(--phosphor-deep); border-color: var(--phosphor); }
+  .controls button .k { color: var(--phosphor-dim); margin-right: 6px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin: 12px 0 8px; font-size: 12px; color: var(--phosphor-dim); }
+  .tools label { display: flex; align-items: center; gap: 8px; }
+  .tools input[type=range] { accent-color: var(--phosphor); width: 160px; }
+  .tools output { color: var(--phosphor); min-width: 38px; }
+
+  .strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .cell { background: var(--screen); border: 1px solid var(--phosphor-edge); padding: 8px 4px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .cell:hover { border-color: var(--phosphor-line); }
+  .cell .nm { font-size: 10px; color: var(--phosphor-dim); letter-spacing: .5px; }
+
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px 18px; font-size: 12px; color: var(--phosphor-dim); line-height: 1.5; }
+  .legend b { color: var(--phosphor); font-weight: normal; }
+
+  .hdr { background: var(--screen); border: 1px solid var(--phosphor-edge); padding: 8px 14px; display: flex; align-items: center; gap: 12px; min-height: 80px; max-width: 480px; }
+  .hdr .t { font-family: 'VT323', monospace; font-size: 22px; letter-spacing: 2px; }
+  .hdr .s { font-size: 10px; color: var(--phosphor-dim); }
+  .hdr .lbl { margin-left: auto; font-size: 10px; color: var(--phosphor-dim); }
+
+  @media (max-width: 720px) { .strip { grid-template-columns: repeat(3, 1fr); } .stage { height: 270px; } }
+
+  /* ───────────────────────── MASCOT ───────────────────────── */
+  .mascot-panel {
+    --mascot-glow: var(--phosphor);
+    --mascot-dim: var(--phosphor-dim);
+    --mascot-core: #dfff33;
+    --mascot-shade: #061406;
+    --tic-size: 58px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1px; width: 76px;
+    cursor: pointer; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .mascot-panel.big { --tic-size: 260px; width: 290px; }
+  .mascot-panel.mid { --tic-size: 112px; width: 130px; }
+  .time-mascot {
+    width: var(--tic-size); height: var(--tic-size);
+    display: block; overflow: visible; color: var(--mascot-glow);
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--mascot-glow) 70%, transparent)) drop-shadow(0 0 11px color-mix(in srgb, var(--mascot-glow) 30%, transparent));
+    transition: color .35s, filter .35s;
+    animation: mascot-breathe 3.4s ease-in-out infinite;
+  }
+  .mascot-status-worried  .time-mascot { animation-duration: 2.4s; }
+  .mascot-status-stressed .time-mascot { animation-duration: .9s; }
+  .mascot-status-meltdown .time-mascot { animation-duration: .5s; }
+  .mascot-status-over     .time-mascot { animation-duration: 2s; }
+  @keyframes mascot-breathe {
+    0%,100% { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--mascot-glow) 52%, transparent)) drop-shadow(0 0 8px color-mix(in srgb, var(--mascot-glow) 22%, transparent)); }
+    50%     { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--mascot-glow) 70%, transparent)) drop-shadow(0 0 13px color-mix(in srgb, var(--mascot-glow) 34%, transparent)); }
+  }
+
+  .mascot-line, .mascot-fill, .mascot-face, .mascot-detail { stroke: currentColor; transition: stroke .35s, fill .35s, opacity .25s; }
+  .mascot-line { fill: var(--mascot-shade); stroke-width: 4.6; stroke-linecap: round; stroke-linejoin: round; }
+  .mascot-fill { fill: var(--mascot-core); stroke-width: 2; }
+  .mascot-face { fill: none; stroke-width: 4.4; stroke-linecap: round; stroke-linejoin: round; }
+  .mascot-detail { fill: none; stroke-width: 2.1; stroke-linecap: round; opacity: .68; }
+  .mascot-shine { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; opacity: .5; }
+  .mascot-black { fill: var(--screen); stroke: none; }
+  .mascot-grain { fill: currentColor; opacity: .38; transform-box: fill-box; transform-origin: center; animation: grain-twinkle 2.6s ease-in-out infinite; }
+  .mascot-grain:nth-of-type(2) { animation-delay: -.8s; } .mascot-grain:nth-of-type(3) { animation-delay: -1.5s; } .mascot-grain:nth-of-type(4) { animation-delay: -2.1s; }
+  @keyframes grain-twinkle { 0%,100% { opacity: .18; } 50% { opacity: .5; } }
+  .mascot-rim { fill: none; stroke-width: 3; opacity: .85; }
+
+  .mascot-mouth { opacity: 0; stroke-width: 4.1; }
+  .lash { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+  .hi { opacity: 0; transform-origin: 116px 33px; pointer-events: none; }
+  .tongue { fill: var(--mascot-core); stroke: none; opacity: 0; transition: opacity .25s; }
+  .cheek { fill: var(--mascot-core); stroke: none; opacity: 0; transition: opacity .4s; }
+  .mascot-status-good .cheek { opacity: .2; }
+  .mascot-status-over .cheek { opacity: .34; }
+  .mascot-status-over .tongue { opacity: .9; }
+
+  .mascot-brow { fill: none; stroke: var(--mascot-core); stroke-width: 4.6; stroke-linecap: round; opacity: .95; transform-box: fill-box; transform-origin: center; transition: transform .4s cubic-bezier(.34,1.4,.64,1), stroke .35s; }
+  .mascot-eye, .blink { transform-box: fill-box; transform-origin: center; }
+  .mascot-eye { transition: transform .5s cubic-bezier(.34,1.5,.64,1); }
+
+  .arm-l { transform-origin: 31px 90px; } .arm-r { transform-origin: 119px 90px; }
+  .leg-l { transform-origin: 59px 118px; } .leg-r { transform-origin: 91px 118px; }
+  .bell { transform-origin: 75px 40px; } .body { transform-origin: 75px 141px; }
+  .mouths { transform-origin: 75px 98px; } .shadow { transform-origin: 75px 146px; }
+
+  .mascot-status-good     { --mascot-glow:#bfff24; --mascot-dim:#8fb81f; --mascot-core:#dfff33; }
+  .mascot-status-worried  { --mascot-glow:#ffe033; --mascot-dim:#b89420; --mascot-core:#ffe85a; }
+  .mascot-status-stressed { --mascot-glow:#ff8a22; --mascot-dim:#c05718; --mascot-core:#ff9e38; }
+  .mascot-status-meltdown { --mascot-glow:#ff3322; --mascot-dim:#b51f18; --mascot-core:#ff513d; }
+  .mascot-status-over     { --mascot-glow:var(--amber); --mascot-dim:#c07d00; --mascot-core:#ffc133; }
+
+  .mascot-status-good .mouth-happy, .mascot-status-worried .mouth-worried, .mascot-status-stressed .mouth-stressed,
+  .mascot-status-meltdown .mouth-meltdown, .mascot-status-over .mouth-over { opacity: 1; }
+
+  .mascot-status-good .mascot-eye { transform: translateY(1px) scaleX(1.04); }
+  .mascot-status-worried .mascot-eye { transform: translateY(-.5px) scaleY(1.08); }
+  .mascot-status-stressed .mascot-eye { transform: translateY(-1px) scaleX(.9) scaleY(1.16); }
+  .mascot-status-meltdown .mascot-eye { transform: translateY(-1.5px) scaleX(.82) scaleY(1.26); }
+  .mascot-status-over .mascot-eye { transform: translateY(1.5px) scaleX(1.06) scaleY(.92); }
+
+  .mascot-status-good .brow-left { transform: translate(-1px,1px) rotate(-6deg); }
+  .mascot-status-good .brow-right { transform: translate(1px,1px) rotate(6deg); }
+  .mascot-status-worried .brow-left { transform: translate(1px,2px) rotate(-10deg); }
+  .mascot-status-worried .brow-right { transform: translate(-1px,2px) rotate(10deg); }
+  .mascot-status-stressed .brow-left { transform: translate(2px,3px) rotate(-16deg); }
+  .mascot-status-stressed .brow-right { transform: translate(-2px,3px) rotate(16deg); }
+  .mascot-status-meltdown .brow-left { transform: translate(3px,4px) rotate(-22deg); }
+  .mascot-status-meltdown .brow-right { transform: translate(-3px,4px) rotate(22deg); }
+  .mascot-status-over .brow-left { transform: translate(-1px,-1px) rotate(-3deg); }
+  .mascot-status-over .brow-right { transform: translate(1px,-1px) rotate(3deg); }
+
+  .mascot-copy { width: 100%; font-size: 8px; line-height: 1.25; color: var(--mascot-dim); letter-spacing: .5px; text-align: center; transition: color .35s; }
+  .mascot-panel.big .mascot-copy { font-size: 13px; margin-top: 8px; }
+  .mascot-panel.mid .mascot-copy { display: none; }
+
+  .sweat { opacity: 0; fill: var(--mascot-core); stroke: none; transform-box: fill-box; transform-origin: center; }
+  @keyframes sweat-drip {
+    0%   { opacity: 0;  transform: translateY(-4px) scale(.5); }
+    18%  { opacity: .9; transform: translateY(0) scale(1); }
+    75%  { opacity: .75; }
+    100% { opacity: 0;  transform: translateY(15px) scale(.9); }
+  }
+  .mascot-status-worried .sweat-a  { animation: sweat-drip 3.2s ease-in infinite; }
+  .mascot-status-stressed .sweat-a { animation: sweat-drip 1.9s ease-in infinite; }
+  .mascot-status-stressed .sweat-b { animation: sweat-drip 1.5s ease-in -.8s infinite; }
+  .mascot-status-meltdown .sweat-a { animation: sweat-drip .95s ease-in infinite; }
+  .mascot-status-meltdown .sweat-b { animation: sweat-drip .75s ease-in -.4s infinite; }
+
+  @media (prefers-reduced-motion: reduce) { .time-mascot, .mascot-grain, .sweat { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TIC // MOTION PREVIEW v4</h1>
+  <div class="sub">Simplified: flat shading, plain mouths, normal pupils. Short moods still look worried. Earlier versions: <a href="mascot-preview-v1.html">v1</a>, <a href="mascot-preview-v2.html">v2</a>, <a href="mascot-preview-v3.html">v3</a>.</div>
+
+  <div class="card"><h2>TIC <small id="moodName">ON TARGET</small></h2><div class="stage" id="stageMain"></div></div>
+
+  <div class="controls" id="moods" role="group" aria-label="Mood"></div>
+  <div class="tools">
+    <button id="cycle" aria-pressed="false">▶ AUTO-CYCLE MOODS</button>
+    <button id="hello">REPLAY HELLO</button>
+    <button id="wink">WINK</button>
+    <label>MOTION BOLDNESS <input id="bold" type="range" min="40" max="170" value="60"><output id="boldOut">60%</output></label>
+    <span>Keys 1–5 switch mood</span>
+  </div>
+
+  <h3>ALL MOODS, LIVE</h3>
+  <div class="strip" id="strip"></div>
+
+  <h3>ACTUAL SIZE IN THE APP HEADER</h3>
+  <div class="hdr"><div id="smallHost"></div><div><div class="t">TIMECARD</div><div class="s">follows the mood above</div></div><div class="lbl">58px</div></div>
+
+  <h3>WHAT CHANGED IN v4</h3>
+  <div class="legend">
+    <div><b>Plain mouths</b><br>Soft smile on target, a gentle frown at 1h short, a wobbly line at 2h short, a wavy frown at 3h short, an open grin over target.</div>
+    <div><b>Still worried</b><br>Brows tilt more as the shortfall grows, sweat drops appear, and Tic trembles. Pupils stay a normal size.</div>
+    <div><b>Flat shading</b><br>No gradients on the body, bell, mitts, shoes or eyes. One glint on the outline stays.</div>
+    <div><b>Fewer lines</b><br>Mitts keep only the cuff, shoes lose the laces, the bell loses its crossbars, and the tiny dots on the dial are gone.</div>
+    <div><b>Gentler noodle arms</b><br>Arms bend with their momentum but no longer stretch.</div>
+    <div><b>Kept from v3</b><br>Hello wave with HI!, wink, lashes, shine on the eyes, and the 5 moods.</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════ markup (uid keeps gradient ids unique per instance so CSS colours resolve per mascot) ═══════════════ */
+function armMarkup(side) {
+  return `
+   <path class="mascot-line mascot-arm" data-p="armPath${side}" d="M31 90c-12 8-18 20-20 33"/>
+   <g class="mascot-hand" data-p="mitt${side}">
+    <path class="mascot-line" d="M30 119c5-5 12-3 10 3-1 4-6 5-10 3z"/>
+    <path class="mascot-line" d="M6 124c5-11 23-9 27 1 4 11-11 17-22 11-4-2-6-6-5-12z"/>
+    <path class="mascot-detail" d="M11 120c6-4 15-4 21 0" style="stroke-width:3;opacity:.5"/>
+    <path class="mascot-shine" d="M11 127c1-3 4-5 8-5.500"/>
+   </g>`;
+}
+function legMarkup() {
+  return `
+   <path class="mascot-line" d="M59 118l-4 20"/>
+   <g class="mascot-foot">
+    <path class="mascot-line" d="M28 141c0-8 8-13 18-13 9 0 16 3 22 8 3 3 2 8-2 8H34c-4 0-6-1-6-3z"/>
+    <path class="mascot-detail" d="M30 142h37" style="stroke-width:2.6;opacity:.8"/>
+    <path class="mascot-shine" d="M35 136c3-4 8-6 13-6" style="stroke-width:2"/>
+   </g>`;
+}
+function mascotSVG(uid) {
+  const g = s => s.replace(/UID/g, uid);
+  const drop = 'M0-8C-3.500-2-5 1-5 3.500a5 5 0 0 0 10 0C5 1 3.500-2 0-8z';
+  return g(`
+<svg class="time-mascot" viewBox="0 0 150 150" role="img" aria-label="Tic animated clock status" focusable="false">
+ <ellipse class="shadow" data-p="shadow" cx="75" cy="146" rx="42" ry="4.500" fill="currentColor" opacity=".16"/>
+ <g class="body" data-p="body">
+  <g class="bell" data-p="bell">
+   <circle class="mascot-line" cx="75" cy="4" r="4.200"/>
+   <path class="mascot-line" d="M65 25h20l-2 19H67z"/>
+   <path class="mascot-line" d="M48 12c8-9 46-9 54 0 4 5 2 15-5 18-13 5-31 5-44 0-7-3-9-13-5-18z"/>
+   <path class="mascot-detail" d="M58 15v8M66 13v10M75 12v11M84 13v10M92 15v8"/>
+   <path class="mascot-shine" d="M54 11c4-3.500 10-5 17-5.200"/>
+  </g>
+  <g class="leg-l" data-p="legL">${legMarkup()}</g>
+  <g class="leg-r" data-p="legR"><g transform="translate(150 0) scale(-1 1)">${legMarkup()}</g></g>
+  <g class="arm-l">${armMarkup('L')}</g>
+  <g class="arm-r"><g transform="translate(150 0) scale(-1 1)">${armMarkup('R')}</g></g>
+  <circle class="mascot-line" cx="75" cy="78" r="52"/>
+  <path class="mascot-shine" d="M28 61A50 50 0 0 1 58 31"/>
+  <circle class="mascot-rim mascot-face" cx="75" cy="78" r="45"/>
+  <path class="mascot-face" d="M75 32v15M75 109v15M29 78h15M106 78h15M42 45l10 10M108 45l-10 10M42 111l10-10M108 111l-10-10"/>
+  <path class="mascot-detail" d="M56 39l3 8M94 39l-3 8M36 61l8 3M114 61l-8 3M36 95l8-3M114 95l-8-3M56 117l3-8M94 117l-3-8"/>
+  <g data-p="features">
+   <ellipse class="cheek" cx="45" cy="93" rx="6.500" ry="3.800"/>
+   <ellipse class="cheek" cx="105" cy="93" rx="6.500" ry="3.800"/>
+   <g class="mascot-eye eye-l"><g class="blink" data-p="blinkL">
+     <ellipse class="mascot-fill" cx="59" cy="73" rx="10" ry="17"/>
+     <g class="pupil" data-p="pupilL">
+       <ellipse class="mascot-black" cx="61" cy="74" rx="4.500" ry="8"/>
+       <circle cx="59.2" cy="69.800" r="2.100" fill="#fff" opacity=".92"/>
+     </g>
+     <path class="lash" d="M52.6 60L47 55.5M50.3 64.5L44.5 61M55.6 57L51.5 51.5"/>
+   </g></g>
+   <g class="mascot-eye eye-r"><g class="blink" data-p="blinkR">
+     <ellipse class="mascot-fill" cx="91" cy="73" rx="10" ry="17"/>
+     <g class="pupil" data-p="pupilR">
+       <ellipse class="mascot-black" cx="89" cy="74" rx="4.500" ry="8"/>
+       <circle cx="87.2" cy="69.800" r="2.100" fill="#fff" opacity=".92"/>
+     </g>
+     <path class="lash" d="M97.4 60L103 55.5M99.7 64.5L105.5 61M94.4 57L98.5 51.5"/>
+   </g></g>
+   <g data-p="browL"><path class="mascot-brow brow-left" d="M50 54Q60 46 70 51"/></g>
+   <g data-p="browR"><path class="mascot-brow brow-right" d="M80 51Q90 46 100 54"/></g>
+   <g class="mouths" data-p="mouths">
+    <path class="mascot-face mascot-mouth mouth-happy" d="M56 91c6 9 13 13 19 13s13-4 19-13"/>
+    <path class="mascot-face mascot-mouth mouth-worried" d="M60 99c6-5 24-5 30 0"/>
+    <path class="mascot-face mascot-mouth mouth-stressed" d="M61 96c8 2 20 2 28 0"/>
+    <path class="mascot-face mascot-mouth mouth-meltdown" d="M60 101c5-6 10 5 15-1s10 5 15-1"/>
+    <path class="mascot-face mascot-mouth mouth-over" style="fill:var(--screen)" d="M58 91c2 13 10 19 17 19s15-6 17-19z"/>
+    <ellipse class="tongue" cx="75" cy="104" rx="7.500" ry="3.800"/>
+   </g>
+  </g>
+  <g class="hi" data-p="hi"><path d="M116 4H138A6 6 0 0 1 144 10V20A6 6 0 0 1 138 26H125L116 33L117 26A6 6 0 0 1 110 20V10A6 6 0 0 1 116 4Z" fill="var(--screen)" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><text x="127" y="21" text-anchor="middle" font-family="VT323, monospace" font-size="16" fill="currentColor">HI!</text></g>
+  <g transform="translate(124 40)"><path class="sweat sweat-a" d="${drop}"/></g>
+  <g transform="translate(26 44)"><path class="sweat sweat-b" d="${drop}"/></g>
+ </g>
+</svg>`);
+}
+
+/* ═══════════════ moods ═══════════════ */
+const MOODS = [
+  { id: 'good',     label: 'ON TARGET',  text: 'TARGET LOCKED' },
+  { id: 'worried',  label: 'SHORT 1H+',  text: 'SHORT 1+' },
+  { id: 'stressed', label: 'SHORT 2H+',  text: 'SHORT 2+' },
+  { id: 'meltdown', label: 'SHORT 3H+',  text: 'SHORT 3+' },
+  { id: 'over',     label: 'OVER TARGET', text: 'OVER TARGET' },
+];
+const MOOD_INDEX = Object.fromEntries(MOODS.map((m, i) => [m.id, i]));
+
+const P = {
+  'good':     { bobAmp:3.2, bobF:.38, bounce:.15, sq:.06, swayA:1.6, swayF:.19, armBase:5,   armAmp:8,  armF:.38, legAmp:2.5, jit:0,   jitRot:0,   hb:0,    hbF:1,   mouthA:.07, mouthQ:0,  eyeR:3,   eyeMin:1.2, eyeMax:3.2, blkMin:2,   blkMax:5,   browA:.5 },
+  'worried':  { bobAmp:2.2, bobF:.6,  bounce:0,   sq:.03, swayA:2.6, swayF:.5,  armBase:-12, armAmp:10, armF:1.25,legAmp:3,   jit:.15, jitRot:.2, hb:.015, hbF:1.3, mouthA:.1,  mouthQ:.1, eyeR:4,   eyeMin:.5,  eyeMax:1.2, blkMin:1.2, blkMax:2.6, browA:1.2 },
+  'stressed': { bobAmp:1.2, bobF:1.7, bounce:.1,  sq:.04, swayA:1.8, swayF:2.9,  armBase:-22, armAmp:11, armF:3.4, legAmp:4,   jit:.7,  jitRot:.9, hb:.04,  hbF:2.3, mouthA:.12, mouthQ:.6, eyeR:2.6, eyeMin:.2,  eyeMax:.55, blkMin:1,   blkMax:2.4, browA:1.8 },
+  'meltdown': { bobAmp:2,   bobF:3.3, bounce:.6,  sq:.07, swayA:2.8, swayF:4.6,  armBase:56,  armAmp:34, armF:3.3, legAmp:7,   jit:1.4, jitRot:2.4,hb:.07,  hbF:3.5, mouthA:.32, mouthQ:1,  eyeR:2.2, eyeMin:.1,  eyeMax:.3,  blkMin:4,   blkMax:7,   browA:2.6 },
+  'over':     { bobAmp:6.2, bobF:.8,  bounce:.8,  sq:.12, swayA:3.2, swayF:.4,   armBase:42,  armAmp:17, armF:.8,  legAmp:5,   jit:0,   jitRot:0,   hb:0,    hbF:1,   mouthA:.13, mouthQ:0,  eyeR:2,   eyeMin:1.8, eyeMax:4,   blkMin:3,   blkMax:6,   browA:1.2 },
+};
+const KEYS = Object.keys(P.good);
+const HOP_H = 15;                       // one tap reaction for every mood
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const smooth = t => t * t * (3 - 2 * t);
+const TAU = Math.PI * 2;
+const noise = (t, s) => (Math.sin(t * 17.3 + s) + Math.sin(t * 29.1 + s * 2.7) * .6 + Math.sin(t * 43.7 + s * 1.3) * .4) / 2;
+function spring(s, target, k, c, dt) {
+  const n = 3, h = dt / n;
+  for (let i = 0; i < n; i++) { s.v += (k * (target - s.x) - c * s.v) * h; s.x += s.v * h; }
+}
+const mkSpring = (x = 0) => ({ x, v: 0 });
+
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+let boldness = .6;
+const motionScale = () => boldness * (reduceMotion.matches ? .4 : 1);
+
+/* ═══════════════ Tic controller ═══════════════ */
+class Tic {
+  constructor(panel) {
+    this.panel = panel;
+    this.el = {};
+    panel.querySelectorAll('[data-p]').forEach(n => this.el[n.dataset.p] = n);
+    this.mood = panel.dataset.mood || 'good';
+    this.cur = { ...P[this.mood] };
+    this.t = 0;
+    this.bobPh = rand(0, TAU); this.swayPh = rand(0, TAU); this.armPh = 0; this.hbPh = 0; this.prevBph = 0;
+    this.lastY = 0; this.vy = 0;
+    this.s = {
+      armL: mkSpring(), armR: mkSpring(), legL: mkSpring(), legR: mkSpring(), bell: mkSpring(),
+      px: mkSpring(), py: mkSpring(), popS: mkSpring(), popR: mkSpring(), faceX: mkSpring(), faceY: mkSpring(), settle: mkSpring(),
+    };
+    this.gaze = { x: 0, y: 0 }; this.pend = null;
+    this.nextSaccade = 0; this.nextBlink = rand(1, 3); this.blinkAt = -9; this.dblBlink = false;
+    this.tap = { at: -9, dir: 1, H: HOP_H, landed: true };
+    this.gagAt = rand(5, 9);
+    this.hover = 0; this.hoverTarget = 0; this.cursor = { x: 0, y: 0 };
+    this.lookSeq = null;
+    this.hello = { at: -9 }; this.winkAt = -9; this.winkSide = 1;
+    this.bindEvents();
+  }
+
+  bindEvents() {
+    const p = this.panel;
+    p.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') this.hoverTarget = 1; });
+    p.addEventListener('pointerleave', () => { this.hoverTarget = 0; });
+    p.addEventListener('pointermove', e => {
+      if (e.pointerType !== 'mouse') return;
+      const r = this.el.body.ownerSVGElement.getBoundingClientRect();
+      this.cursor.x = clamp((e.clientX - (r.left + r.width / 2)) / (r.width * .6), -1, 1);
+      this.cursor.y = clamp((e.clientY - (r.top + r.height * .5)) / (r.height * .6), -1, 1);
+    });
+    p.addEventListener('pointerdown', () => { this.startTap(1); this.nextBlink = this.t + .55; });
+  }
+
+  setMood(id, silent) {
+    if (id === this.mood) return;
+    const ni = MOOD_INDEX[id], oi = MOOD_INDEX[this.mood];
+    const flinch = ni >= 1 && ni <= 3 && (oi < ni || oi >= 4);   // getting more "short" → flinch
+    this.mood = id;
+    if (silent) return;
+    this.s.popS.v += flinch ? -7 : 8;
+    this.s.popR.v += (Math.random() < .5 ? -1 : 1) * (flinch ? 90 : 50);
+    if (!flinch) this.startTap(.55);
+    this.blinkAt = this.t;
+  }
+
+  startTap(scale) {
+    this.tap = { at: this.t, dir: -this.tap.dir, H: HOP_H * scale * motionScale(), landed: false };
+  }
+
+  tapPose() {
+    const u = (this.t - this.tap.at) / .62;
+    if (u < 0 || u > 1) return { y: 0, sq: 0, arm: 0, tilt: 0 };
+    if (u < .16) { const k = Math.sin(u / .16 * Math.PI / 2); return { y: 2.6 * k, sq: .16 * k, arm: -14 * k, tilt: 0 }; }
+    if (u < .86) {
+      const f = (u - .16) / .7;
+      return { y: -this.tap.H * 4 * f * (1 - f), sq: -.11 * Math.sin(f * Math.PI), arm: 48 * Math.sin(f * Math.PI), tilt: this.tap.dir * Math.sin(f * Math.PI) };
+    }
+    if (!this.tap.landed) { this.tap.landed = true; this.s.settle.v += 34 * motionScale(); }   // landing thud
+    const k = (u - .86) / .14;
+    return { y: 0, sq: .2 * Math.sin(k * Math.PI), arm: -10 * Math.sin(k * Math.PI), tilt: 0 };
+  }
+
+  sayHello() { this.hello.at = this.t + .05; this.startTap(.8); this.nextBlink = this.t + .8; }
+  helloPose() {
+    const u = (this.t - this.hello.at) / 2.4;
+    if (u < 0 || u > 1) return { env: 0, arm: 0, armL: 0, rot: 0, brow: 0, bubble: 0 };
+    const ramp = u < .1 ? smooth(u / .1) : u > .82 ? smooth((1 - u) / .18) : 1;
+    const w = Math.sin((this.t - this.hello.at) * TAU * 3.3);
+    return { env: ramp, arm: ramp * (78 + 24 * w), armL: ramp * 8, rot: ramp * (-3 + 1.2 * w), brow: ramp * 2.2, bubble: ramp };
+  }
+  wink() { this.winkAt = this.t; this.winkSide = Math.random() < .5 ? -1 : 1; }
+  winkPose() {
+    const u = this.t - this.winkAt;
+    if (u < 0 || u > .6) return { openL: 1, openR: 1, tilt: 0, browL: 0, browR: 0 };
+    const c = smooth(clamp(u < .09 ? u / .09 : u < .4 ? 1 : 1 - (u - .4) / .2, 0, 1));
+    const o = 1 - .94 * c, sd = this.winkSide;
+    return { openL: sd < 0 ? o : 1, openR: sd > 0 ? o : 1, tilt: sd * 2.5 * c, browL: sd < 0 ? 1.8 * c : -1.6 * c, browR: sd > 0 ? 1.8 * c : -1.6 * c };
+  }
+  /* noodle arm: rotates about the shoulder and bends against its own motion; the mitt follows the tip */
+  drawArm(side, sp) {
+    const th = sp.x, v = sp.v, M = motionScale();
+    const rot = (x, y, a) => { const r = a * Math.PI / 180, c = Math.cos(r), s = Math.sin(r); return [x * c - y * s, x * s + y * c]; };
+    const st = 1;
+    let e = rot(-20, 33, th).map(n => n * st), c1 = rot(-12, 8, th).map(n => n * st), c2 = rot(-18, 20, th).map(n => n * st);
+    const len = Math.hypot(e[0], e[1]) || 1, nx = -e[1] / len, ny = e[0] / len;
+    const off = clamp(-v * .008, -6, 6) * M + Math.sin(this.armPh * .9 + (side === 'L' ? 0 : 1.7)) * 1.6 * M;
+    c2 = [c2[0] + nx * off, c2[1] + ny * off]; c1 = [c1[0] + nx * off * .5, c1[1] + ny * off * .5]; e = [e[0] + nx * off * .4, e[1] + ny * off * .4];
+    const f = n => n.toFixed(1);
+    this.el['armPath' + side].setAttribute('d', `M31 90C${f(31 + c1[0])} ${f(90 + c1[1])} ${f(31 + c2[0])} ${f(90 + c2[1])} ${f(31 + e[0])} ${f(90 + e[1])}`);
+    this.el['mitt' + side].setAttribute('transform', `translate(${(31 + e[0] - 11).toFixed(2)} ${(90 + e[1] - 123).toFixed(2)}) rotate(${(th * .9 + off * 1.4).toFixed(2)} 11 123)`);
+  }
+
+  update(dt) {
+    this.t += dt;
+    const t = this.t, M = motionScale();
+    const target = P[this.mood], cur = this.cur;
+    const a = 1 - Math.exp(-dt / .35);
+    for (const k of KEYS) cur[k] += (target[k] - cur[k]) * a;
+
+    this.hover += (this.hoverTarget - this.hover) * (1 - Math.exp(-dt / .14));
+    const hov = this.hover;
+
+    this.bobPh += TAU * cur.bobF * dt;
+    this.swayPh += TAU * cur.swayF * dt;
+    this.armPh += TAU * cur.armF * dt;
+    this.hbPh += TAU * cur.hbF * dt;
+
+    /* body */
+    const bph = this.bobPh % TAU;
+    if (bph < this.prevBph) this.s.settle.v += (6 + 26 * cur.bounce) * M;   // ground contact → small thud
+    this.prevBph = bph;
+    const smoothH = (1 - Math.cos(bph)) / 2;
+    const arcH = Math.abs(Math.sin(bph / 2));
+    const h = smoothH + (arcH - smoothH) * cur.bounce;
+    const tap = this.tapPose();
+    const hel = this.helloPose();
+    const wk = this.winkPose();
+    const hk = clamp(M, .6, 1.2);
+    spring(this.s.settle, 0, 260, 9, dt);
+    let y = -cur.bobAmp * M * h + tap.y + this.s.settle.x * .1;
+    let rot = Math.sin(this.swayPh) * cur.swayA * M + tap.tilt * 5 * M + this.s.popR.x;
+    const jm = M > .35 ? 1 : 0;
+    const jx = noise(t * 3.1, 1) * cur.jit * jm * M, jy = noise(t * 3.7, 5) * cur.jit * .6 * jm * M;
+    rot += noise(t * 2.3, 9) * cur.jitRot * jm * M;
+    const x = Math.sin(this.swayPh * .5) * cur.swayA * .25 * M + jx;
+    y += jy;
+    rot += hov * 2.6 * this.cursor.x * M;
+    rot += (hel.rot + wk.tilt) * hk;
+    y -= hov * 1.2 * M;
+    const land = clamp(1 - h / .16, 0, 1) * cur.bounce;
+    let sq = cur.sq * M * ((.4 - h) + land * .9) + tap.sq * M + Math.sin(t * 1.9) * .006 + this.s.settle.x * .004;
+    const hb = Math.pow(Math.max(0, Math.sin(this.hbPh)), 6) * cur.hb * M;
+    const popScale = this.s.popS.x * .06;
+    const sy = 1 - sq + hb * .6 + popScale;
+    const sx = 1 + sq * .85 + hb + popScale + hov * .035;
+    const vyNow = (y - this.lastY) / Math.max(dt, 1e-3);
+    this.lastY = y;
+    this.vy += (vyNow - this.vy) * clamp(dt * 18, 0, 1);
+    this.el.body.style.transform = `translate(${x.toFixed(2)}px,${y.toFixed(2)}px) rotate(${rot.toFixed(2)}deg) scale(${sx.toFixed(4)},${sy.toFixed(4)})`;
+
+    /* ground shadow reacts to height */
+    const lift = clamp(-y / 14, 0, 1.2);
+    this.el.shadow.style.transform = `scale(${(1 - .3 * lift + (sx - 1) * .8).toFixed(3)},${(1 - .3 * lift).toFixed(3)})`;
+    this.el.shadow.style.opacity = (.2 * (1 - .6 * Math.min(lift, 1))).toFixed(3);
+
+    /* limbs + bell springs */
+    const drag = -this.vy * .16;
+    const cheer = hov * (24 + 20 * Math.sin(t * TAU * 3.4));
+    const noiseArm = this.mood === 'meltdown' ? 10 : this.mood === 'stressed' ? 3 : 0;
+    const armTargetL = cur.armBase + Math.sin(this.armPh - .5) * cur.armAmp * M + drag + tap.arm * M + noise(t * 1.7, 2) * noiseArm * M + hel.armL * hk;
+    const armTargetR = cur.armBase + Math.sin(this.armPh + 2.4) * cur.armAmp * M + drag + tap.arm * M + noise(t * 1.9, 7) * noiseArm * M + cheer + hel.arm * hk;
+    spring(this.s.armL, armTargetL, 150, 9, dt);
+    spring(this.s.armR, armTargetR, 150, 9, dt);
+    spring(this.s.legL, Math.sin(this.armPh + 1.2) * cur.legAmp * M - rot * .5 - this.vy * .05, 110, 10, dt);
+    spring(this.s.legR, -Math.sin(this.armPh + 1.2) * cur.legAmp * M + rot * .5 + this.vy * .05, 110, 10, dt);
+    const rattle = this.mood === 'meltdown' ? noise(t * 5, 3) * 9 : this.mood === 'stressed' ? noise(t * 4, 3) * 2.5 : 0;
+    spring(this.s.bell, -rot * 1.5 - this.vy * .1 + rattle * M, 90, 5, dt);
+    spring(this.s.popS, 0, 190, 7.5, dt);
+    spring(this.s.popR, 0, 160, 9, dt);
+    this.drawArm('L', this.s.armL);
+    this.drawArm('R', this.s.armR);
+    this.el.legL.style.transform = `rotate(${this.s.legL.x.toFixed(2)}deg)`;
+    this.el.legR.style.transform = `rotate(${this.s.legR.x.toFixed(2)}deg)`;
+    this.el.bell.style.transform = `rotate(${this.s.bell.x.toFixed(2)}deg)`;
+
+    /* eyes: saccades with a tiny wind-up, hover gaze, gags, blinks */
+    if (this.lookSeq) {
+      const step = this.lookSeq[0];
+      this.gaze = { x: step.x * cur.eyeR * 1.4, y: step.y };
+      if (t > step.until) { this.lookSeq.shift(); if (!this.lookSeq.length) { this.lookSeq = null; this.nextSaccade = t + .3; } }
+    } else if (hov > .5) {
+      this.gaze = { x: this.cursor.x * 4, y: this.cursor.y * 3.2 };
+      this.pend = null;
+    } else if (t > this.nextSaccade) {
+      const center = (this.mood === 'good' || this.mood === 'over') && Math.random() < .4;
+      const to = center ? { x: 0, y: .5 } : { x: rand(-1, 1) * cur.eyeR, y: rand(-.7, .7) * cur.eyeR };
+      const from = this.gaze;
+      this.gaze = { x: from.x - (to.x - from.x) * .14, y: from.y - (to.y - from.y) * .14 };   // wind-up opposite the glance
+      this.pend = { to, at: t + .075 };
+      this.nextSaccade = t + rand(cur.eyeMin, cur.eyeMax);
+    }
+    if (this.pend && t >= this.pend.at) { this.gaze = this.pend.to; this.pend = null; }
+    spring(this.s.px, this.gaze.x, 700, 42, dt);
+    spring(this.s.py, this.gaze.y, 700, 42, dt);
+    const pxv = clamp(this.s.px.x, -4.2, 4.2), pyv = clamp(this.s.py.x, -5, 5);
+    this.el.pupilL.style.transform = `translate(${pxv.toFixed(2)}px,${pyv.toFixed(2)}px)`;
+    this.el.pupilR.style.transform = `translate(${(pxv * .94).toFixed(2)}px,${pyv.toFixed(2)}px)`;
+
+    if (t > this.nextBlink) {
+      this.blinkAt = t;
+      if (!this.dblBlink && Math.random() < .2) { this.dblBlink = true; this.nextBlink = t + .26; }
+      else { this.dblBlink = false; this.nextBlink = t + rand(cur.blkMin, cur.blkMax); }
+    }
+    const bt = t - this.blinkAt;
+    let open = 1;
+    if (bt >= 0 && bt < .17) open = 1 - .94 * smooth(bt < .06 ? bt / .06 : bt < .08 ? 1 : 1 - (bt - .08) / .09);
+    this.el.blinkL.style.transform = `scaleY(${Math.min(open, wk.openL).toFixed(3)})`;
+    this.el.blinkR.style.transform = `scaleY(${Math.min(open, wk.openR).toFixed(3)})`;
+
+    /* face parallax */
+    spring(this.s.faceX, this.gaze.x * .45 + rot * .15, 120, 14, dt);
+    spring(this.s.faceY, this.gaze.y * .3 - this.vy * .012 + (sy - 1) * 6, 120, 14, dt);
+    this.el.features.style.transform = `translate(${this.s.faceX.x.toFixed(2)}px,${this.s.faceY.x.toFixed(2)}px)`;
+
+    /* brows */
+    const bw = cur.browA * M;
+    const lift2 = -hov * 2.6 - hel.brow;
+    const fast = this.mood === 'meltdown' || this.mood === 'stressed';
+    const twL = Math.sin(t * (this.mood === 'good' ? 1.2 : 3.5) + 1) * bw * (fast ? 1 : .6) + noise(t, 4) * bw * .6;
+    const twR = Math.sin(t * (this.mood === 'good' ? 1.2 : 3.5) + 3) * bw * .7 + noise(t, 8) * bw * .6;
+    this.el.browL.style.transform = `translateY(${(twL + lift2 + wk.browL).toFixed(2)}px)`;
+    this.el.browR.style.transform = `translateY(${(twR + lift2 + wk.browR).toFixed(2)}px)`;
+
+    /* mouth */
+    const mY = 1 + cur.mouthA * M * (h - .5) * 2 + Math.max(0, Math.sin(this.hbPh)) * cur.hb * 1.5 * M + hov * .08 + hel.env * .1;
+    const mX = 1 - (mY - 1) * .35;
+    const mq = noise(t * 2.2, 6) * cur.mouthQ * .8 * M;
+    this.el.mouths.style.transform = `translate(${mq.toFixed(2)}px,0) scale(${mX.toFixed(3)},${mY.toFixed(3)})`;
+
+    /* hello bubble */
+    this.el.hi.style.opacity = hel.bubble.toFixed(2);
+    this.el.hi.style.transform = `scale(${(.6 + .4 * hel.bubble).toFixed(3)})`;
+
+    /* idle gags (calm moods) */
+    if (t > this.gagAt) {
+      this.gagAt = t + rand(7, 13);
+      if (this.mood === 'good' || this.mood === 'over') {
+        const r = Math.random();
+        if (r < .35) this.startTap(.5);
+        else if (r < .7) this.wink();
+        else this.lookSeq = [{ x: -1, y: -.5, until: t + .5 }, { x: 1, y: -.5, until: t + 1.1 }, { x: 0, y: .8, until: t + 1.5 }];
+      }
+    }
+  }
+}
+
+/* ═══════════════ page wiring ═══════════════ */
+let uidN = 0;
+function build(host, size, mood, label) {
+  const panel = document.createElement('div');
+  panel.className = `mascot-panel ${size} mascot-status-${mood}`;
+  panel.dataset.mood = mood;
+  panel.innerHTML = mascotSVG('t' + (uidN++)) + `<div class="mascot-copy">${label}</div>`;
+  host.appendChild(panel);
+  return panel;
+}
+const mainPanel = build(document.getElementById('stageMain'), 'big', 'good', MOODS[0].text);
+const smallPanel = build(document.getElementById('smallHost'), 'small', 'good', MOODS[0].text);
+const followers = [mainPanel, smallPanel];
+const followerTics = followers.map(p => new Tic(p));
+
+const strip = document.getElementById('strip');
+const stripTics = MOODS.map(m => {
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+  const p = build(cell, 'mid', m.id, m.text);
+  const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = m.label;
+  cell.appendChild(nm);
+  strip.appendChild(cell);
+  cell.addEventListener('click', e => { if (!p.contains(e.target)) { stopCycle(); setMood(m.id); } });
+  return new Tic(p);
+});
+
+let currentMood = 'good';
+function setMood(id, silent) {
+  currentMood = id;
+  followers.forEach(p => {
+    MOODS.forEach(m => p.classList.remove('mascot-status-' + m.id));
+    p.classList.add('mascot-status-' + id);
+    p.querySelector('.mascot-copy').textContent = MOODS[MOOD_INDEX[id]].text;
+  });
+  followerTics.forEach(t => t.setMood(id, silent));
+  document.getElementById('moodName').textContent = MOODS[MOOD_INDEX[id]].label;
+  document.querySelectorAll('#moods button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === id)));
+}
+const moodsEl = document.getElementById('moods');
+MOODS.forEach((m, i) => {
+  const b = document.createElement('button');
+  b.dataset.id = m.id;
+  b.innerHTML = `<span class="k">${i + 1}</span>${m.label}`;
+  b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+  b.addEventListener('click', () => { stopCycle(); setMood(m.id); });
+  moodsEl.appendChild(b);
+});
+addEventListener('keydown', e => {
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= MOODS.length) { stopCycle(); setMood(MOODS[n - 1].id); }
+});
+
+const bold = document.getElementById('bold'), boldOut = document.getElementById('boldOut');
+bold.addEventListener('input', () => { boldness = bold.value / 100; boldOut.textContent = bold.value + '%'; });
+
+let cycleTimer = null;
+const cycleBtn = document.getElementById('cycle');
+function stopCycle() { if (cycleTimer) { clearInterval(cycleTimer); cycleTimer = null; } cycleBtn.setAttribute('aria-pressed', 'false'); cycleBtn.textContent = '▶ AUTO-CYCLE MOODS'; }
+cycleBtn.addEventListener('click', () => {
+  if (cycleTimer) return stopCycle();
+  cycleBtn.setAttribute('aria-pressed', 'true'); cycleBtn.textContent = '■ STOP CYCLE';
+  const step = () => setMood(MOODS[(MOOD_INDEX[currentMood] + 1) % MOODS.length].id);
+  step(); cycleTimer = setInterval(step, 4500);
+});
+
+setMood('good', true);
+const allTics = [...followerTics, ...stripTics];
+document.getElementById('hello').addEventListener('click', () => followerTics.forEach(t => t.sayHello()));
+document.getElementById('wink').addEventListener('click', () => followerTics.forEach(t => t.wink()));
+setTimeout(() => followerTics.forEach(t => t.sayHello()), 700);
+let last = performance.now();
+function frame(now) {
+  const dt = clamp((now - last) / 1000, 0, 1 / 20);
+  last = now;
+  if (dt > 0) allTics.forEach(t => t.update(dt));
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
