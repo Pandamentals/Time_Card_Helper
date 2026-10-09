@@ -64,7 +64,7 @@ const ok = (name, cond, extra = '') => { (cond ? pass++ : fail++); console.log((
   t = await mk({ date: '2027-02-10T09:00:00', tab: 'pto' }); await t.page.goto(URL);
   let tile = await t.page.evaluate(() => [...document.querySelectorAll('.p-stat')][0].innerText.replace(/\n+/g, ' | '));
   const projected = parseFloat(tile.match(/([\d.]+)H/)[1]);
-  ok('R2 balance tile is projected, not the stale start', projected > 15.85 && /H TODAY/.test(tile), tile);
+  ok('R2 balance tile is projected, not the stale start', projected > 15.85 && /BALANCE TODAY/i.test(tile), tile);
   // update flow: real balance on a mid-month date
   await t.page.click('#p-update');
   ok('R2 [UPDATE] opens the settings tab and focuses the balance field', await t.page.evaluate(() => document.getElementById('ptab-set').getAttribute('aria-selected') === 'true' && document.activeElement.id === 'pf_start'));

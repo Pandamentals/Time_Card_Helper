@@ -1699,19 +1699,12 @@ window.PTO = (() => {
     const L = ledger(), tk = todayKey();
     const todayInfo = L.days[tk];
     const todayBal = todayInfo ? todayInfo.bal : (tk > S.end ? L.endBal : S.start);   // end of today, incl. planned PTO
-    // Available = the lowest the balance gets from today on (planned PTO out, paydays in): what is safe to book.
-    let avail = todayBal, availK = null, ahead = 0;
-    for (const k in L.days) {
-      if (k <= tk) continue;
-      ahead = r2(ahead + (L.days[k].h || 0));
-      if (L.days[k].bal < avail) { avail = L.days[k].bal; availK = k; }
-    }
     const lowBad = L.low.v < 0, fTotal = L.forfeit.reduce((a, b) => a + b.h, 0);
     const first = addDays(parse(S.asOf), 1), last = parse(S.end);
     const span = d => `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}`;
     let h = pendingHtml() + `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">${span(first)} TO ${span(last)} &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
     h += `<div class="p-stats">
-      <div class="p-stat${avail < 0 ? ' bad' : ''}"><span class="k">Available after PTO</span><span class="v">${fmt(avail)}H</span><span class="n">${fmt(todayBal)}H TODAY · ${fmt(ahead)}H PLANNED AHEAD${availK ? `<br>LOWEST ${niceDate(availK)}${avail < 0 ? ' · OVERDRAWN' : ''}` : ''}<br>${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(S.start)}H ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
+      <div class="p-stat"><span class="k">Balance today</span><span class="v">${fmt(todayBal)}H</span><span class="n">${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(S.start)}H ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
       <div class="p-stat"><span class="k">Planned PTO</span><span class="v">${fmt(L.used)}H</span><span class="n">${fmt(L.shutUsed)}H IS SHUTDOWN</span></div>
       <div class="p-stat${fTotal > 0 ? ' warn' : ''}"><span class="k">Dec 31 balance</span><span class="v">${L.decBefore == null ? '-' : fmt(L.decBefore) + 'H'}</span><span class="n">${fTotal > 0 ? `${fmt(fTotal)}H OVER THE ${fmt(S.cap)}H CAP, LOST JAN 1` : `UNDER THE ${fmt(S.cap)}H ROLLOVER CAP`}</span></div>
       <div class="p-stat${lowBad ? ' bad' : ''}"><span class="k">Lowest point</span><span class="v">${fmt(L.low.v)}H</span><span class="n">${L.low.k ? niceDate(L.low.k) : ''}${lowBad ? ' · OVERDRAWN' : ''}</span></div>
