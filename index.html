@@ -643,7 +643,7 @@
     background: transparent; border: 1px solid transparent; padding: 0 2px; margin: 0; -moz-appearance: textfield;
     transition: color 0.15s, background-color 0.15s, border-color 0.15s;
   }
-  .pto-hours:hover { border-bottom-color: var(--amber-dim); cursor: text; }
+  .pto-hours:not(:focus) { cursor: text; }
   .pto-hours::-webkit-inner-spin-button, .pto-hours::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   .pto-hours:focus { color: var(--amber); background: var(--black); border-color: var(--amber); outline: none; box-shadow: 0 0 6px rgb(var(--amber-rgb) / 0.35); }
   .pto-display {
@@ -2540,7 +2540,7 @@ function setDayMode(i, mode) {
 }
 
 // ── PTO HOURS BOX: a day off charged fewer hours (e.g. 5 of Friday's 7 after working extra) ──
-container.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest('.pto-hours')) e.target.blur(); });   // Enter saves and dims it
+container.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest('.pto-hours')) e.target.blur(); });   // Enter saves and dims it back
 container.addEventListener('change', e => {
   const box = e.target.closest('.pto-hours');
   if (!box) return;
