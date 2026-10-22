@@ -38,6 +38,8 @@ const T = h => new Date(`2026-12-01T${String(h).padStart(2, '0')}:00:00`);
     await A.page.fill('#ps_start', bal); await A.page.fill('#ps_accrual', acc); await A.page.fill('#ps_asOf', asOf || '2026-12-01'); await A.page.click('[data-sync="setup-save"]');
     ok('A setup rejects ' + label, (await A.page.textContent('#p-setup-err')).length > 5 && await monthCount(A.page) === 0);
   }
+  await A.page.click('label[for="ps_start"] .p-info'); await A.page.mouse.move(0, 0);
+  ok('setup: tapping the info mark shows the available-balance tip', await A.page.locator('#p-tip-setup').isVisible());
   await setup(A, 20, 4, '2026-12-01');
   ok('A setup saves -> calendar + balance tile', await monthCount(A.page) >= 9 && /20\.00H|20H/.test(await A.page.innerText('.p-stat')), (await A.page.innerText('.p-stat')).replace(/\n+/g, ' '));
   await A.page.reload(); ok('A does not see setup again', await A.page.locator('#ps_start').count() === 0);
