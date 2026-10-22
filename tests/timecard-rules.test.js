@@ -65,6 +65,25 @@ const t = suite('Timecard rules');
   t.ok('Fri holiday: leaving at 17:00 Mon-Thu lands exactly on target', s.total === '40.00H' && s.diff === 'ON TARGET', JSON.stringify(s));
   await a.ctx.close();
 
+  // day lengths come from the planner's Settings (here 8.00 Mon-Thu, 7.00 Fri)
+  a = await openApp(b, { date: MON, plan: planWith({}, { hMT: 8, hF: 7 }) });
+  s = await totals(a.page);
+  t.ok('custom hours: target follows Settings (39H)', s.target === '39.00H', JSON.stringify(s));
+  await a.page.click('.pto-btn[data-day="0"]');
+  t.ok('custom hours: Mon PTO credits 8.00H', await pill(a.page, 0) === '8.00H' && /PTO — 8\.00H/.test(await text(a.page, '#pto-display-0')));
+  t.ok('custom hours: banner shows the 8.00H credit', /MONDAY PTO ACTIVE — 8\.00H CREDITED/.test(await text(a.page, '#holiday-banner')));
+  await a.page.click('.pto-btn[data-day="0"]');
+  await a.page.click('.hol-btn[data-day="1"]');
+  t.ok('custom hours: an 8.00H day holiday leaves the week on target', /TUESDAY HOLIDAY ACTIVE — 8\.00H CREDITED\. WEEK ON TARGET/.test(await text(a.page, '#holiday-banner')));
+  await a.page.click('.hol-btn[data-day="1"]');
+  await a.page.click('.hol-btn[data-day="4"]');
+  t.ok('custom hours: Friday-holiday ripple drops Mon-Thu to 7.75 (leave 16:45)', /LEAVE AT 16:45 MON.THU/.test(await text(a.page, '#holiday-banner')));
+  for (let i = 0; i < 4; i++) await setTime(a.page, `out-${i}`, '16:45');
+  s = await totals(a.page);
+  t.ok('custom hours: leaving at 16:45 Mon-Thu lands on target', s.total === '39.00H' && s.diff === 'ON TARGET', JSON.stringify(s));
+  t.ok('no page errors (custom hours)', a.errors.length === 0, a.errors.join('|'));
+  await a.ctx.close();
+
   // planner-driven: part-day PTO credit
   a = await open({ '2026-11-03': { t: 'pto', h: 4, u: 9 } });
   s = await totals(a.page);

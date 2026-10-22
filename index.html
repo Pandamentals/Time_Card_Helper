@@ -2008,21 +2008,23 @@ window.PTO = (() => {
     if (!pending) syncMsg = 'THAT LINK COULD NOT BE READ. COPY THE CODE INSTEAD.';
   }
 
-  return { render, getMode, setMode, needsSetup, hasIncoming: () => incoming };
+  // the day lengths set in Settings; the timecard's targets and PTO credits follow these
+  const dayHours = () => ({ mt: S.hMT, f: S.hF });
+
+  return { render, getMode, setMode, dayHours, needsSetup, hasIncoming: () => incoming };
 })();
 </script>
 <script>
 // ── CONFIG ──
 const DAYS_CONFIG = [
-  { name: 'MONDAY',    defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, baseTarget: 8.25 },
-  { name: 'TUESDAY',   defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, baseTarget: 8.25 },
-  { name: 'WEDNESDAY', defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, baseTarget: 8.25 },
-  { name: 'THURSDAY',  defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, baseTarget: 8.25 },
-  { name: 'FRIDAY',    defaultIn: '08:00', defaultOut: '15:30', defaultLunch: 30, baseTarget: 7.00 },
+  { name: 'MONDAY',    defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60 },
+  { name: 'TUESDAY',   defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60 },
+  { name: 'WEDNESDAY', defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60 },
+  { name: 'THURSDAY',  defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60 },
+  { name: 'FRIDAY',    defaultIn: '08:00', defaultOut: '15:30', defaultLunch: 30 },
 ];
 const LUNCH_OPTIONS  = [30, 45, 60];
 const HOLIDAY_HOURS  = 8.0;
-const PTO_HOURS      = 8.25;
 const STORAGE_KEY    = 'timecard_v3';
 const THEME_KEY      = 'timecard_theme';
 
@@ -2055,7 +2057,7 @@ DAYS_CONFIG.forEach((day, i) => {
       </div>
     </div>
     <div class="holiday-display" id="hol-display-${i}">▓ HOLIDAY — 8.00H ▓</div>
-    <div class="pto-display" id="pto-display-${i}">▓ PTO — ${DAYS_CONFIG[i].baseTarget.toFixed(2)}H ▓</div>
+    <div class="pto-display" id="pto-display-${i}">▓ PTO ▓</div>
     <div class="off-display" id="off-display-${i}">▓ SHUTDOWN — UNPAID ▓</div>
     <div class="away-block" id="away-block-${i}">
       <div class="away-header">
@@ -2132,16 +2134,27 @@ function setPressed(el, active) {
   el.setAttribute('aria-pressed', String(active));
 }
 
+// a day's normal hours, from the planner's Settings (8.25 Mon–Thu, 7.00 Fri by default)
+function baseTarget(i) {
+  const h = PTO.dayHours(), v = i === 4 ? h.f : h.mt;
+  return typeof v === 'number' && v > 0 ? v : (i === 4 ? 7.00 : 8.25);
+}
+// Mon–Thu in a Friday-holiday week: the holiday credits 8H for a shorter Friday, so the extra spreads over Mon–Thu
+function rippleTarget() {
+  return Math.round((baseTarget(0) - (HOLIDAY_HOURS - baseTarget(4)) / 4) * 100) / 100;
+}
+const fmtH = h => h.toFixed(2) + 'H';
+
 // per-day effective target (accounts for Friday holiday ripple on Mon–Thu)
 function effectiveTarget(i) {
   if (isOffDay(i)) return 0; // unpaid shutdown: nothing owed
-  if (isPtoDay(i)) return DAYS_CONFIG[i].baseTarget; // PTO credits the day's normal hours (7H on Friday)
+  if (isPtoDay(i)) return baseTarget(i); // PTO credits the day's normal hours (7H on Friday)
   if (isHolidayDay(i)) {
     if (i === 4) return HOLIDAY_HOURS;
-    return (i < 4 && fridayIsHoliday()) ? 8.00 : DAYS_CONFIG[i].baseTarget;
+    return (i < 4 && fridayIsHoliday()) ? rippleTarget() : baseTarget(i);
   }
-  if (i < 4 && fridayIsHoliday()) return 8.00;
-  return DAYS_CONFIG[i].baseTarget;
+  if (i < 4 && fridayIsHoliday()) return rippleTarget();
+  return baseTarget(i);
 }
 
 // dynamic weekly target
@@ -2517,9 +2530,10 @@ function update() {
       return;
     }
     if (isPtoDay(i)) {
-      const ptoH = DAYS_CONFIG[i].baseTarget;
+      const ptoH = baseTarget(i);
       total += ptoH;
-      pill.textContent = ptoH.toFixed(2) + 'H';
+      pill.textContent = fmtH(ptoH);
+      document.getElementById(`pto-display-${i}`).textContent = `▓ PTO — ${fmtH(ptoH)} ▓`;
       pill.className   = 'pill pill-pto';
       return;
     }
@@ -2586,13 +2600,15 @@ function updateBanner() {
   for (let i = 0; i < 4; i++) {
     if (isHolidayDay(i)) {
       if (fridayIsHoliday()) {
-        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — TARGET ADJUSTED TO 40H.`);
+        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — TARGET ADJUSTED TO ${+weeklyTarget().toFixed(2)}H.`);
       } else {
-        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — 8.00H CREDITED. WEEK IS 0.25H SHORT. MAKE UP TIME.`);
+        const short = baseTarget(i) - HOLIDAY_HOURS;
+        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — ${fmtH(HOLIDAY_HOURS)} CREDITED. ` + (short > 0.001
+          ? `WEEK IS ${fmtH(short)} SHORT. MAKE UP TIME.` : 'WEEK ON TARGET.'));
       }
     }
     if (isPtoDay(i)) {
-      lines.push(`${DAYS_CONFIG[i].name} PTO ACTIVE — 8.25H CREDITED. WEEK ON TARGET.`);
+      lines.push(`${DAYS_CONFIG[i].name} PTO ACTIVE — ${fmtH(baseTarget(i))} CREDITED. WEEK ON TARGET.`);
     }
   }
   for (let i = 0; i < 5; i++) {
@@ -2600,10 +2616,12 @@ function updateBanner() {
     if (partialPto[i] > 0) lines.push(`${DAYS_CONFIG[i].name} PLANNED PTO — ${partialPto[i].toFixed(2)}H CREDITED TO THIS DAY.`);
   }
   if (fridayIsHoliday()) {
-    lines.push('FRIDAY HOLIDAY ACTIVE — LEAVE AT 17:00 MON–THU');
+    // a default Mon–Thu day (clock in, lunch) worked to the ripple target
+    const leave = toMin(DAYS_CONFIG[0].defaultIn) + DAYS_CONFIG[0].defaultLunch + Math.round(rippleTarget() * 60);
+    lines.push(`FRIDAY HOLIDAY ACTIVE — LEAVE AT ${String(Math.floor(leave / 60)).padStart(2, "0")}:${String(leave % 60).padStart(2, "0")} MON–THU`);
   }
   if (isPtoDay(4)) {
-    lines.push('FRIDAY PTO ACTIVE — 7.00H CREDITED. WEEK ON TARGET.');
+    lines.push(`FRIDAY PTO ACTIVE — ${fmtH(baseTarget(4))} CREDITED. WEEK ON TARGET.`);
   }
 
   if (lines.length === 0) {
