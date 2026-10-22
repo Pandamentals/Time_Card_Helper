@@ -1,0 +1,12 @@
+{
+	// Serves the PWA from Cloudflare as static files. The name must match the Worker in the dashboard.
+	"name": "timecard-helper",
+	"compatibility_date": "2026-10-13",
+	"assets": {
+		"directory": "./",
+		// keep /index.html served as-is: the service worker caches and falls back to it, and a redirected response breaks offline launch
+		"html_handling": "none",
+		// so the bare address (and the installed app's start URL "./") still opens index.html
+		"not_found_handling": "single-page-application"
+	}
+}
