@@ -16,8 +16,8 @@ const t = suite('Planner logic');
   t.ok('a payday adds the accrual (Dec 3: 33.48 + 4.62 = 38.10)', /balance 38\.10 hours/.test(await cellBal(a.page, '2026-12-03')));
   t.ok('paydays fall every other Thursday (Dec 3, 17, 31 yes; Dec 10, 24 no)', await a.page.evaluate(() => ['2026-12-03', '2026-12-17', '2026-12-31'].every(k => document.querySelector(`button.p-day[data-k="${k}"] .p-pay`)) && ['2026-12-10', '2026-12-24'].every(k => !document.querySelector(`button.p-day[data-k="${k}"] .p-pay`))));
   t.ok('holiday costs nothing (Thanksgiving)', await (async () => { await gotoMonth(a.page, '2026-11'); const h = await cellBal(a.page, '2026-11-26'); const prev = await cellBal(a.page, '2026-11-25'); return /HOL/.test(h) && /balance 33\.48 hours/.test(h) && /balance 33\.48 hours/.test(prev); })());
-  t.ok('company shutdown days cost PTO (3 x 8.25 = 24.75 from the Dec 17 balance)', await (async () => { await gotoMonth(a.page, '2026-12'); const a28 = await cellBal(a.page, '2026-12-28'); return /-8\.25/.test(a28); })());
-  t.ok('Dec 31 balance = 15.00 + 7 paydays (32.34) - shutdown (24.75) = 22.59', (await tile(a.page, 'dec 31 balance')).v === '22.59H', (await tile(a.page, 'dec 31 balance')).v);
+  t.ok('company shutdown days cost PTO at 8.00 (Friday-holiday week: 3 x 8.00 = 24.00)', await (async () => { await gotoMonth(a.page, '2026-12'); const a28 = await cellBal(a.page, '2026-12-28'); return /-8\.00/.test(a28); })());
+  t.ok('Dec 31 balance = 15.00 + 7 paydays (32.34) - shutdown (24.00) = 23.34', (await tile(a.page, 'dec 31 balance')).v === '23.34H', (await tile(a.page, 'dec 31 balance')).v);
   await a.ctx.close();
 
   // PTO cost depends on the weekday

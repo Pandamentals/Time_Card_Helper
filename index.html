@@ -1509,7 +1509,14 @@ window.PTO = (() => {
   const addDays = (d, n) => new Date(d.getTime() + n * 864e5);
   const r2      = x => Math.round(x * 100) / 100;
   const fmt     = x => r2(x).toFixed(2);
-  const fullH   = d => d.getUTCDay() === 5 ? S.hF : S.hMT;
+  const HOL_H   = 8;   // a paid holiday always credits 8H
+  // a full day's hours; in a Friday-holiday week Mon–Thu drop so the week still totals the same (8.00 by default)
+  const friHol  = d => { const e = S.days[key(addDays(d, 5 - d.getUTCDay()))]; return !!e && e.t === 'hol'; };
+  const fullH   = d => {
+    const wd = d.getUTCDay();
+    if (wd === 5) return S.hF;
+    return wd >= 1 && wd <= 4 && friHol(d) ? r2(S.hMT - (HOL_H - S.hF) / 4) : S.hMT;
+  };
   const isPay   = d => { const diff = Math.round((d - parse(S.firstPay)) / 864e5); return diff >= 0 && diff % 14 === 0; };
   const entryHours = (e, d) => (!e || (e.t !== 'pto' && e.t !== 'shut')) ? 0 : (e.full ? fullH(d) : (+e.h || 0));
   const esc     = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -2148,7 +2155,7 @@ const fmtH = h => h.toFixed(2) + 'H';
 // per-day effective target (accounts for Friday holiday ripple on Mon–Thu)
 function effectiveTarget(i) {
   if (isOffDay(i)) return 0; // unpaid shutdown: nothing owed
-  if (isPtoDay(i)) return baseTarget(i); // PTO credits the day's normal hours (7H on Friday)
+  if (isPtoDay(i)) return (i < 4 && fridayIsHoliday()) ? rippleTarget() : baseTarget(i); // PTO credits the day's normal hours (7H on Friday, 8H Mon–Thu in a Friday-holiday week)
   if (isHolidayDay(i)) {
     if (i === 4) return HOLIDAY_HOURS;
     return (i < 4 && fridayIsHoliday()) ? rippleTarget() : baseTarget(i);
@@ -2530,7 +2537,7 @@ function update() {
       return;
     }
     if (isPtoDay(i)) {
-      const ptoH = baseTarget(i);
+      const ptoH = eTarget;
       total += ptoH;
       pill.textContent = fmtH(ptoH);
       document.getElementById(`pto-display-${i}`).textContent = `▓ PTO — ${fmtH(ptoH)} ▓`;
@@ -2608,7 +2615,7 @@ function updateBanner() {
       }
     }
     if (isPtoDay(i)) {
-      lines.push(`${DAYS_CONFIG[i].name} PTO ACTIVE — ${fmtH(baseTarget(i))} CREDITED. WEEK ON TARGET.`);
+      lines.push(`${DAYS_CONFIG[i].name} PTO ACTIVE — ${fmtH(effectiveTarget(i))} CREDITED. WEEK ON TARGET.`);
     }
   }
   for (let i = 0; i < 5; i++) {
