@@ -10,8 +10,9 @@ const t = suite('Planner logic');
 
   // projection: 15.00 on Sep 30 + paydays Oct 8, Oct 22, Nov 5, Nov 19 (4 x 4.62) = 33.48 on Dec 2
   let a = await openApp(b, { plan: planWith(), tab: 'pto' });
-  let x = await tile(a.page, 'balance today');
-  t.ok('balance today = start + paydays so far (15.00 + 4 x 4.62)', x.v === '33.48H', JSON.stringify(x));
+  let x = await tile(a.page, 'net balance');
+  t.ok('net balance = start + paydays so far (15.00 + 4 x 4.62; shutdown not taken out ahead)', x.v === '33.48H', JSON.stringify(x));
+  t.ok('net balance tile says how much to keep for the shutdown (3 x 8.00)', /KEEP 24\.00H FOR SHUTDOWN/.test(x.n), x.n);
   await gotoMonth(a.page, '2026-12');
   t.ok('a payday adds the accrual (Dec 3: 33.48 + 4.62 = 38.10)', /balance 38\.10 hours/.test(await cellBal(a.page, '2026-12-03')));
   t.ok('paydays fall every other Thursday (Dec 3, 17, 31 yes; Dec 10, 24 no)', await a.page.evaluate(() => ['2026-12-03', '2026-12-17', '2026-12-31'].every(k => document.querySelector(`button.p-day[data-k="${k}"] .p-pay`)) && ['2026-12-10', '2026-12-24'].every(k => !document.querySelector(`button.p-day[data-k="${k}"] .p-pay`))));
@@ -43,6 +44,24 @@ const t = suite('Planner logic');
   await a.page.click('button.p-day[data-k="2026-12-09"]'); await a.page.fill('#p-customH', '2.1'); await a.page.click('[data-act="custom"]');
   t.ok('tapping Half day stores 4.25 / 4.00, custom stores 2.10 as typed', await a.page.evaluate(() => { const d = JSON.parse(localStorage.getItem('pto-planner-v1')).days; return d['2026-12-08'].h === 4.25 && d['2026-11-23'].h === 4 && d['2026-12-09'].h === 2.1; }));
   t.ok('no page errors (half / custom)', a.errors.length === 0, a.errors.join('|'));
+  await a.ctx.close();
+
+  // the balance typed in is NET: planned PTO after its date is already out of it (Carlos: 17.59 gross, Fri Oct 23 off -> 10.59)
+  a = await openApp(b, { date: '2026-10-22T09:00:00', plan: planWith({ '2026-10-23': { t: 'pto', full: true, u: 9 } }, { start: 30, asOf: '2026-10-01' }), tab: 'pto' });
+  await a.page.click('#ptab-set');
+  await a.page.evaluate(() => { const d = document.getElementById('pf_asOf'); d.value = '2026-10-22'; d.dispatchEvent(new Event('change', { bubbles: true })); });
+  await a.page.evaluate(() => { const i = document.getElementById('pf_start'); i.value = '10.59'; i.dispatchEvent(new Event('change', { bubbles: true })); });
+  const stored = () => a.page.evaluate(() => JSON.parse(localStorage.getItem('pto-planner-v1')).start);
+  t.ok('net 10.59 with Oct 23 (7.00) planned is kept as 17.59 before that day', await stored() === 17.59, String(await stored()));
+  t.ok('settings field shows the net balance back', await a.page.inputValue('#pf_start') === '10.59');
+  t.ok('net balance tile shows 10.59 (no double count)', (await tile(a.page, 'net balance')).v === '10.59H', JSON.stringify(await tile(a.page, 'net balance')));
+  await a.page.click('#ptab-cal'); await gotoMonth(a.page, '2026-10');
+  t.ok('Oct 23 ends at 10.59', /balance 10\.59 hours/.test(await cellBal(a.page, '2026-10-23')), await cellBal(a.page, '2026-10-23'));
+  await a.page.click('button.p-day[data-k="2026-10-26"]'); await a.page.click('[data-act="full"]');
+  t.ok('a day planned later comes out of the net (10.59 - 8.25 = 2.34)', (await tile(a.page, 'net balance')).v === '2.34H');
+  await a.page.click('button.p-day[data-k="2026-10-23"]'); await a.page.click('[data-act="clear"]');
+  t.ok('removing a planned day gives its hours back (2.34 + 7.00 = 9.34)', (await tile(a.page, 'net balance')).v === '9.34H');
+  t.ok('no page errors (net balance)', a.errors.length === 0, a.errors.join('|'));
   await a.ctx.close();
 
   // Jan 1 rollover cap

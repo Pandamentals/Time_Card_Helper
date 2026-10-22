@@ -1525,6 +1525,19 @@ window.PTO = (() => {
   const niceDate = k => { const d = parse(k); return `${DOWS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCDate()}`; };
   const todayKey = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
 
+  // ── NET BALANCE ──
+  // The balance you type in is NET: every PTO day you planned after its date is already taken out of it
+  // (company shutdown days are not: they come out of the balance on their dates).
+  // Inside, S.start stays the balance before those days, so the ledger below subtracts each one exactly once:
+  // removing a planned day gives its hours back, and a day planned later is taken out on its date.
+  function plannedAfter(k) {
+    let h = 0;
+    Object.keys(S.days).forEach(dk => { const e = S.days[dk]; if (dk > k && dk <= S.end && e.t === 'pto') h += entryHours(e, parse(dk)); });
+    return r2(h);
+  }
+  const netStart = () => r2(S.start - plannedAfter(S.asOf));
+  const setNet   = (net, asOf) => { S.asOf = asOf; S.start = r2(net + plannedAfter(asOf)); };
+
   // ── LEDGER: walk day by day from the as-of date, applying payday accrual, PTO use and the Jan 1 cap ──
   function ledger() {
     let bal = S.start, d = addDays(parse(S.asOf), 1);
@@ -1670,7 +1683,7 @@ window.PTO = (() => {
     if (!validDate(asOf))            return err('PICK THE DATE THAT BALANCE IS FROM.');
     if (asOf >= S.end)               return err(`THAT DATE MUST BE BEFORE THE PLAN ENDS (${S.end}).`);
     if (isNaN(acc) || acc <= 0)      return err('ENTER HOW MANY HOURS YOU EARN EACH PAYDAY.');
-    S.start = r2(bal); S.asOf = asOf; S.accrual = r2(acc); S.su = Date.now();
+    setNet(r2(bal), asOf); S.accrual = r2(acc); S.su = Date.now();
     changed();
   }
 
@@ -1686,7 +1699,7 @@ window.PTO = (() => {
   };
   const setupHtml = () => `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">FIRST-TIME SETUP &nbsp;|&nbsp; ENTER YOUR OWN NUMBERS</div></div>
     <div class="p-panel"><div class="p-form">
-      <label for="ps_start">PTO balance (H)<input id="ps_start" type="number" step="0.01" min="0" inputmode="decimal"></label>
+      <label for="ps_start">Net PTO balance (H)<input id="ps_start" type="number" step="0.01" min="0" inputmode="decimal"></label>
       <label for="ps_asOf">Balance as of<input id="ps_asOf" type="date" value="${todayKey()}"></label>
       <label for="ps_accrual">Accrual per payday (H)<input id="ps_accrual" type="number" step="0.01" min="0" inputmode="decimal"></label>
     </div>
@@ -1708,12 +1721,17 @@ window.PTO = (() => {
     const L = ledger(), tk = todayKey();
     const todayInfo = L.days[tk];
     const todayBal = todayInfo ? todayInfo.bal : (tk > S.end ? L.endBal : S.start);   // end of today, incl. planned PTO
+    const netToday = r2(todayBal - plannedAfter(tk > S.asOf ? tk : S.asOf));            // ...and with every PTO day planned ahead taken out
+    // shutdown days still to come are not in the net: show what to keep for them
+    let shutAhead = 0;
+    Object.keys(S.days).forEach(k => { const e = S.days[k]; if (e.t === 'shut' && k > tk && k > S.asOf && k <= S.end) shutAhead += entryHours(e, parse(k)); });
+    shutAhead = r2(shutAhead);
     const lowBad = L.low.v < 0, fTotal = L.forfeit.reduce((a, b) => a + b.h, 0);
     const first = addDays(parse(S.asOf), 1), last = parse(S.end);
     const span = d => `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}`;
     let h = pendingHtml() + `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">${span(first)} TO ${span(last)} &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
     h += `<div class="p-stats">
-      <div class="p-stat"><span class="k">Balance today</span><span class="v">${fmt(todayBal)}H</span><span class="n">${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(S.start)}H ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
+      <div class="p-stat${netToday < 0 ? ' bad' : ''}"><span class="k">Net balance</span><span class="v">${fmt(netToday)}H</span><span class="n">YOUR PLANNED PTO TAKEN OUT<br>${shutAhead > 0 ? `KEEP ${fmt(shutAhead)}H FOR SHUTDOWN<br>` : ''}${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(netStart())}H NET ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
       <div class="p-stat"><span class="k">Planned PTO</span><span class="v">${fmt(L.used)}H</span><span class="n">${fmt(L.shutUsed)}H IS SHUTDOWN</span></div>
       <div class="p-stat${fTotal > 0 ? ' warn' : ''}"><span class="k">Dec 31 balance</span><span class="v">${L.decBefore == null ? '-' : fmt(L.decBefore) + 'H'}</span><span class="n">${fTotal > 0 ? `${fmt(fTotal)}H OVER THE ${fmt(S.cap)}H CAP, LOST JAN 1` : `UNDER THE ${fmt(S.cap)}H ROLLOVER CAP`}</span></div>
       <div class="p-stat${lowBad ? ' bad' : ''}"><span class="k">Lowest point</span><span class="v">${fmt(L.low.v)}H</span><span class="n">${L.low.k ? niceDate(L.low.k) : ''}${lowBad ? ' · OVERDRAWN' : ''}</span></div>
@@ -1741,12 +1759,12 @@ window.PTO = (() => {
     if (subTab === 'set') {
       const fld = (lbl, id, v, type) => `<label for="pf_${id}">${lbl}<input id="pf_${id}" data-f="${id}" type="${type || 'number'}" step="0.01" inputmode="decimal" value="${esc(v)}"></label>`;
       h += `<div class="p-panel" id="p-panel" role="tabpanel" aria-labelledby="ptab-set"><div class="p-form">
-        ${fld('Balance (H)', 'start', S.start)}${fld('Balance as of', 'asOf', S.asOf, 'date')}
+        ${fld('Net balance (H)', 'start', netStart())}${fld('Balance as of', 'asOf', S.asOf, 'date')}
         ${fld('Plan ends', 'end', S.end, 'date')}${fld('Accrual per payday (H)', 'accrual', S.accrual)}
         ${fld('Rollover cap Jan 1 (H)', 'cap', S.cap)}${fld('First payday', 'firstPay', S.firstPay, 'date')}
         ${fld('Mon to Thu day (H)', 'hMT', S.hMT)}${fld('Friday day (H)', 'hF', S.hF)}
         </div><div class="p-row"><button type="button" class="p-btn danger" id="p-reset">${confirmReset ? 'TAP AGAIN TO RESET EVERYTHING' : '[ RESET PLAN ]'}</button>${confirmReset ? '<button type="button" class="p-btn" id="p-reset-cancel">CANCEL</button>' : ''}</div>
-        <p class="p-note">ENTER YOUR REAL BALANCE AND ITS DATE TO RE-SYNC WITH YOUR PAYSTUB; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p>${syncHtml()}</div>`;
+        <p class="p-note">ENTER YOUR NET BALANCE (WITH ALL PTO YOU HAVE PLANNED ALREADY TAKEN OUT; SHUTDOWN DAYS COME OUT ON THEIR DATES) AND ITS DATE TO RE-SYNC; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p>${syncHtml()}</div>`;
     } else {
       h += `<div class="p-legend">
         <span><i class="p-sw sw-pto"></i>Your PTO</span>
@@ -1943,12 +1961,14 @@ window.PTO = (() => {
         const asOf = f === 'asOf' ? v : S.asOf, end = f === 'end' ? v : S.end;
         // the plan needs at least one day, and stays small enough to render (max ~3 years)
         if (f !== 'firstPay' && (end <= asOf || (parse(end) - parse(asOf)) / 864e5 > 1100)) { e.target.value = S[f]; return; }
-        S[f] = v;
+        if (f === 'asOf') setNet(netStart(), v);   // a new date keeps the net balance you see
+        else S[f] = v;
       }
       else {
         const n = parseFloat(v);
-        if (isNaN(n) || n < 0) { e.target.value = S[f]; return; }
-        S[f] = n;
+        if (isNaN(n) || n < 0) { e.target.value = f === 'start' ? netStart() : S[f]; return; }
+        if (f === 'start') setNet(r2(n), S.asOf);
+        else S[f] = n;
       }
       S.su = Date.now();
       changed();
