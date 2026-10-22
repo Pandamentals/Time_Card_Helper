@@ -1518,6 +1518,8 @@ window.PTO = (() => {
     return wd >= 1 && wd <= 4 && friHol(d) ? r2(S.hMT - (HOL_H - S.hF) / 4) : S.hMT;
   };
   const isPay   = d => { const diff = Math.round((d - parse(S.firstPay)) / 864e5); return diff >= 0 && diff % 14 === 0; };
+  // half a full day, rounded to the quarter hour like the timesheet (7.5 min rounds up): 8.25 -> 4.25
+  const halfH   = d => { const m = fullH(d) * 30, r = m % 15; return (r < 7.5 ? m - r : m - r + 15) / 60; };
   const entryHours = (e, d) => (!e || (e.t !== 'pto' && e.t !== 'shut')) ? 0 : (e.full ? fullH(d) : (+e.h || 0));
   const esc     = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const niceDate = k => { const d = parse(k); return `${DOWS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCDate()}`; };
@@ -1810,7 +1812,7 @@ window.PTO = (() => {
     if (e && e.t === 'hol')         b += btn('holoff', 'Working this day', 'danger') + btn('close', 'Keep holiday', 'quiet');
     else if (e && e.t === 'holoff') b += btn('holon', 'Restore paid holiday', 'hol') + btn('full', 'PTO full day', 'pto');
     else if (e && e.t === 'shut')   b += btn('shutfull', `Cover with PTO (${fmt(full)})`, 'pto') + btn('shutunpaid', 'Leave unpaid', 'shut');
-    else b += btn('full', `Full day (${fmt(full)})`, 'pto') + btn('half', `Half day (${fmt(r2(full / 2))})`, 'pto') + btn('addhol', 'Paid holiday', 'hol')
+    else b += btn('full', `Full day (${fmt(full)})`, 'pto') + btn('half', `Half day (${fmt(halfH(d))})`, 'pto') + btn('addhol', 'Paid holiday', 'hol')
       + (e && e.t === 'pto' ? btn('clear', 'Remove PTO', 'danger') : btn('close', 'Cancel', 'quiet'));
     b += '</div>';
     if (!(e && e.t === 'hol')) {
@@ -1871,7 +1873,7 @@ window.PTO = (() => {
     const k = openKey, e = S.days[k], name = e && e.n;
     if (a === 'close') { closeSheet(); return; }
     if (a === 'full')            put(k, { t: 'pto', full: true });
-    else if (a === 'half')       put(k, { t: 'pto', h: r2(fullH(parse(k)) / 2) });
+    else if (a === 'half')       put(k, { t: 'pto', h: halfH(parse(k)) });
     else if (a === 'clear')      clear(k);
     else if (a === 'addhol')     put(k, { t: 'hol', n: 'Company holiday' });
     else if (a === 'holoff')     put(k, { t: 'holoff', n: name });

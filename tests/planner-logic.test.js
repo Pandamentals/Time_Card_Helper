@@ -31,6 +31,20 @@ const t = suite('Planner logic');
   t.ok('part-day PTO costs exactly its hours (Dec 3: 38.10 - 4.13 = 33.97)', /balance 33\.97 hours/.test(await cellBal(a.page, '2026-12-08')) && /-4\.13/.test(await a.page.locator('button.p-day[data-k="2026-12-08"] .p-tag').textContent()));
   await a.ctx.close();
 
+  // half days round to the quarter hour; custom hours are taken as typed
+  a = await openApp(b, { plan: planWith(), tab: 'pto' });
+  const halfLabel = async k => { await gotoMonth(a.page, k.slice(0, 7)); await a.page.click(`button.p-day[data-k="${k}"]`); const l = await a.page.locator('[data-act="half"]').textContent(); await a.page.keyboard.press('Escape'); return l; };
+  t.ok('Mon-Thu half day is 4.25 (8.25 / 2 rounded up to the quarter)', /4\.25/.test(await halfLabel('2026-12-08')));
+  t.ok('Friday half day is 3.50', /3\.50/.test(await halfLabel('2026-12-11')));
+  t.ok('half day in a Friday-holiday week is 4.00', /4\.00/.test(await halfLabel('2026-11-23')));
+  await a.page.click('button.p-day[data-k="2026-11-23"]'); await a.page.click('[data-act="half"]');
+  await gotoMonth(a.page, '2026-12');
+  await a.page.click('button.p-day[data-k="2026-12-08"]'); await a.page.click('[data-act="half"]');
+  await a.page.click('button.p-day[data-k="2026-12-09"]'); await a.page.fill('#p-customH', '2.1'); await a.page.click('[data-act="custom"]');
+  t.ok('tapping Half day stores 4.25 / 4.00, custom stores 2.10 as typed', await a.page.evaluate(() => { const d = JSON.parse(localStorage.getItem('pto-planner-v1')).days; return d['2026-12-08'].h === 4.25 && d['2026-11-23'].h === 4 && d['2026-12-09'].h === 2.1; }));
+  t.ok('no page errors (half / custom)', a.errors.length === 0, a.errors.join('|'));
+  await a.ctx.close();
+
   // Jan 1 rollover cap
   a = await openApp(b, { plan: planWith({}, { start: 200 }), tab: 'pto' });
   x = await tile(a.page, 'dec 31 balance');
