@@ -1065,6 +1065,21 @@
   }
   .p-tile-btn:hover { border-color: rgb(var(--phosphor-rgb) / 0.4667); color: var(--phosphor); }
   .p-tile-btn:focus-visible { outline: 1px solid var(--phosphor); outline-offset: 2px; }
+  /* details behind a hover / tap tip instead of under the number */
+  .p-stat.has-tip { position: relative; }
+  .p-info {
+    font: inherit; font-size: 9px; line-height: 1; padding: 1px 3px; margin-left: 4px; vertical-align: 1px; cursor: help;
+    background: transparent; color: var(--phosphor-dim); border: 1px solid var(--phosphor-edge);
+  }
+  .p-info:hover, .p-stat.tip-open .p-info { color: var(--phosphor); border-color: rgb(var(--phosphor-rgb) / 0.4667); }
+  .p-info:focus-visible { outline: 1px solid var(--phosphor); outline-offset: 2px; }
+  .p-tip {
+    display: none; position: absolute; left: 6px; right: 6px; top: 22px; z-index: 5; padding: 6px 8px;
+    font-size: 9px; line-height: 1.6; letter-spacing: 0.5px; color: var(--phosphor);
+    background: var(--screen); border: 1px solid var(--phosphor-accent); box-shadow: 0 0 8px rgb(var(--phosphor-rgb) / 0.25);
+    pointer-events: none;   /* never blocks [ UPDATE ] underneath */
+  }
+  .p-stat.has-tip .k:hover ~ .p-tip, .p-stat.has-tip .k:focus-within ~ .p-tip, .p-stat.tip-open .p-tip { display: block; }
   .p-stat.warn { border-top-color: var(--amber-mid); }
   .p-stat.warn .v { color: var(--amber); text-shadow: 0 0 8px rgb(var(--amber-rgb) / 0.6); }
   .p-stat.bad { border-top-color: var(--red); background: rgb(var(--red-bg-rgb) / 0.6); }
@@ -1731,7 +1746,7 @@ window.PTO = (() => {
     const span = d => `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}`;
     let h = pendingHtml() + `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">${span(first)} TO ${span(last)} &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
     h += `<div class="p-stats">
-      <div class="p-stat${netToday < 0 ? ' bad' : ''}"><span class="k">Net balance</span><span class="v">${fmt(netToday)}H</span><span class="n">YOUR PLANNED PTO TAKEN OUT<br>${shutAhead > 0 ? `KEEP ${fmt(shutAhead)}H FOR SHUTDOWN<br>` : ''}${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(netStart())}H NET ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
+      <div class="p-stat has-tip${netToday < 0 ? ' bad' : ''}"><span class="k">Net balance<button type="button" class="p-info" id="p-info" aria-label="About net balance" aria-describedby="p-tip-net">i</button></span><span class="v">${fmt(netToday)}H</span><span class="p-tip" id="p-tip-net" role="tooltip">YOUR PLANNED PTO TAKEN OUT<br>${shutAhead > 0 ? `KEEP ${fmt(shutAhead)}H FOR SHUTDOWN<br>` : ''}${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(netStart())}H NET ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
       <div class="p-stat"><span class="k">Planned PTO</span><span class="v">${fmt(L.used)}H</span><span class="n">${fmt(L.shutUsed)}H IS SHUTDOWN</span></div>
       <div class="p-stat${fTotal > 0 ? ' warn' : ''}"><span class="k">Dec 31 balance</span><span class="v">${L.decBefore == null ? '-' : fmt(L.decBefore) + 'H'}</span><span class="n">${fTotal > 0 ? `${fmt(fTotal)}H OVER THE ${fmt(S.cap)}H CAP, LOST JAN 1` : `UNDER THE ${fmt(S.cap)}H ROLLOVER CAP`}</span></div>
       <div class="p-stat${lowBad ? ' bad' : ''}"><span class="k">Lowest point</span><span class="v">${fmt(L.low.v)}H</span><span class="n">${L.low.k ? niceDate(L.low.k) : ''}${lowBad ? ' · OVERDRAWN' : ''}</span></div>
@@ -1939,6 +1954,7 @@ window.PTO = (() => {
       if (mb) { showMonth(mb.dataset.month, '#p-mtoggle'); return; }
       const pg = e.target.closest('[data-page]');
       if (pg) { stepMonth(parseInt(pg.dataset.page, 10)); return; }
+      if (e.target.closest('#p-info')) { e.target.closest('.p-stat').classList.toggle('tip-open'); return; }   // tap opens the tip on touch screens
       if (e.target.closest('#p-update')) {
         subTab = 'set'; render();
         const inp = document.getElementById('pf_start');

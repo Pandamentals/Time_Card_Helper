@@ -5,14 +5,20 @@ const t = suite('Planner logic');
 
 (async () => {
   const b = await launch();
-  const tile = async (page, label) => page.evaluate(l => { const el = [...document.querySelectorAll('.p-stat')].find(s => s.querySelector('.k').textContent.toLowerCase() === l); return el ? { v: el.querySelector('.v').textContent, n: el.querySelector('.n').textContent, cls: el.className } : null; }, label);
+  const tile = async (page, label) => page.evaluate(l => { const el = [...document.querySelectorAll('.p-stat')].find(s => s.querySelector('.k').firstChild.textContent.toLowerCase() === l); return el ? { v: el.querySelector('.v').textContent, n: (el.querySelector('.n') || el.querySelector('.p-tip')).textContent, cls: el.className } : null; }, label);
   const cellBal = (page, k) => page.evaluate(d => { const el = document.querySelector(`button.p-day[data-k="${d}"]`); return el ? el.getAttribute('aria-label') : null; }, k);
 
   // projection: 15.00 on Sep 30 + paydays Oct 8, Oct 22, Nov 5, Nov 19 (4 x 4.62) = 33.48 on Dec 2
   let a = await openApp(b, { plan: planWith(), tab: 'pto' });
   let x = await tile(a.page, 'net balance');
   t.ok('net balance = start + paydays so far (15.00 + 4 x 4.62; shutdown not taken out ahead)', x.v === '33.48H', JSON.stringify(x));
-  t.ok('net balance tile says how much to keep for the shutdown (3 x 8.00)', /KEEP 24\.00H FOR SHUTDOWN/.test(x.n), x.n);
+  const tipText = () => a.page.evaluate(() => document.getElementById('p-tip-net').textContent);
+  t.ok('net balance details are hidden until asked for', await a.page.locator('#p-tip-net').isHidden());
+  await a.page.hover('#p-info');
+  t.ok('hovering the info mark shows the tip, incl. what to keep for the shutdown (3 x 8.00)', await a.page.locator('#p-tip-net').isVisible() && /KEEP 24\.00H FOR SHUTDOWN/.test(await tipText()), await tipText());
+  await a.page.mouse.move(0, 0);
+  await a.page.click('#p-info'); await a.page.mouse.move(0, 0);
+  t.ok('tapping the info mark keeps the tip open (touch screens)', await a.page.locator('#p-tip-net').isVisible());
   await gotoMonth(a.page, '2026-12');
   t.ok('a payday adds the accrual (Dec 3: 33.48 + 4.62 = 38.10)', /balance 38\.10 hours/.test(await cellBal(a.page, '2026-12-03')));
   t.ok('paydays fall every other Thursday (Dec 3, 17, 31 yes; Dec 10, 24 no)', await a.page.evaluate(() => ['2026-12-03', '2026-12-17', '2026-12-31'].every(k => document.querySelector(`button.p-day[data-k="${k}"] .p-pay`)) && ['2026-12-10', '2026-12-24'].every(k => !document.querySelector(`button.p-day[data-k="${k}"] .p-pay`))));
