@@ -1065,6 +1065,21 @@
   }
   .p-tile-btn:hover { border-color: rgb(var(--phosphor-rgb) / 0.4667); color: var(--phosphor); }
   .p-tile-btn:focus-visible { outline: 1px solid var(--phosphor); outline-offset: 2px; }
+  /* details behind a hover / tap tip instead of under the number */
+  .p-stat.has-tip { position: relative; }
+  .p-info {
+    font: inherit; font-size: 9px; line-height: 1; padding: 1px 3px; margin-left: 4px; vertical-align: 1px; cursor: help;
+    background: transparent; color: var(--phosphor-dim); border: 1px solid var(--phosphor-edge);
+  }
+  .p-info:hover, .p-stat.tip-open .p-info { color: var(--phosphor); border-color: rgb(var(--phosphor-rgb) / 0.4667); }
+  .p-info:focus-visible { outline: 1px solid var(--phosphor); outline-offset: 2px; }
+  .p-tip {
+    display: none; position: absolute; left: 6px; right: 6px; top: 22px; z-index: 5; padding: 6px 8px;
+    font-size: 9px; line-height: 1.6; letter-spacing: 0.5px; color: var(--phosphor);
+    background: var(--screen); border: 1px solid var(--phosphor-accent); box-shadow: 0 0 8px rgb(var(--phosphor-rgb) / 0.25);
+    pointer-events: none;   /* never blocks [ UPDATE ] underneath */
+  }
+  .p-stat.has-tip .k:hover ~ .p-tip, .p-stat.has-tip .k:focus-within ~ .p-tip, .p-stat.tip-open .p-tip { display: block; }
   .p-stat.warn { border-top-color: var(--amber-mid); }
   .p-stat.warn .v { color: var(--amber); text-shadow: 0 0 8px rgb(var(--amber-rgb) / 0.6); }
   .p-stat.bad { border-top-color: var(--red); background: rgb(var(--red-bg-rgb) / 0.6); }
@@ -1509,12 +1524,34 @@ window.PTO = (() => {
   const addDays = (d, n) => new Date(d.getTime() + n * 864e5);
   const r2      = x => Math.round(x * 100) / 100;
   const fmt     = x => r2(x).toFixed(2);
-  const fullH   = d => d.getUTCDay() === 5 ? S.hF : S.hMT;
+  const HOL_H   = 8;   // a paid holiday always credits 8H
+  // a full day's hours; in a Friday-holiday week Mon–Thu drop so the week still totals the same (8.00 by default)
+  const friHol  = d => { const e = S.days[key(addDays(d, 5 - d.getUTCDay()))]; return !!e && e.t === 'hol'; };
+  const fullH   = d => {
+    const wd = d.getUTCDay();
+    if (wd === 5) return S.hF;
+    return wd >= 1 && wd <= 4 && friHol(d) ? r2(S.hMT - (HOL_H - S.hF) / 4) : S.hMT;
+  };
   const isPay   = d => { const diff = Math.round((d - parse(S.firstPay)) / 864e5); return diff >= 0 && diff % 14 === 0; };
+  // half a full day, rounded to the quarter hour like the timesheet (7.5 min rounds up): 8.25 -> 4.25
+  const halfH   = d => { const m = fullH(d) * 30, r = m % 15; return (r < 7.5 ? m - r : m - r + 15) / 60; };
   const entryHours = (e, d) => (!e || (e.t !== 'pto' && e.t !== 'shut')) ? 0 : (e.full ? fullH(d) : (+e.h || 0));
   const esc     = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const niceDate = k => { const d = parse(k); return `${DOWS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCDate()}`; };
   const todayKey = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
+
+  // ── NET BALANCE ──
+  // The balance you type in is NET: every PTO day you planned after its date is already taken out of it
+  // (company shutdown days are not: they come out of the balance on their dates).
+  // Inside, S.start stays the balance before those days, so the ledger below subtracts each one exactly once:
+  // removing a planned day gives its hours back, and a day planned later is taken out on its date.
+  function plannedAfter(k) {
+    let h = 0;
+    Object.keys(S.days).forEach(dk => { const e = S.days[dk]; if (dk > k && dk <= S.end && e.t === 'pto') h += entryHours(e, parse(dk)); });
+    return r2(h);
+  }
+  const netStart = () => r2(S.start - plannedAfter(S.asOf));
+  const setNet   = (net, asOf) => { S.asOf = asOf; S.start = r2(net + plannedAfter(asOf)); };
 
   // ── LEDGER: walk day by day from the as-of date, applying payday accrual, PTO use and the Jan 1 cap ──
   function ledger() {
@@ -1661,7 +1698,7 @@ window.PTO = (() => {
     if (!validDate(asOf))            return err('PICK THE DATE THAT BALANCE IS FROM.');
     if (asOf >= S.end)               return err(`THAT DATE MUST BE BEFORE THE PLAN ENDS (${S.end}).`);
     if (isNaN(acc) || acc <= 0)      return err('ENTER HOW MANY HOURS YOU EARN EACH PAYDAY.');
-    S.start = r2(bal); S.asOf = asOf; S.accrual = r2(acc); S.su = Date.now();
+    setNet(r2(bal), asOf); S.accrual = r2(acc); S.su = Date.now();
     changed();
   }
 
@@ -1677,7 +1714,7 @@ window.PTO = (() => {
   };
   const setupHtml = () => `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">FIRST-TIME SETUP &nbsp;|&nbsp; ENTER YOUR OWN NUMBERS</div></div>
     <div class="p-panel"><div class="p-form">
-      <label for="ps_start">PTO balance (H)<input id="ps_start" type="number" step="0.01" min="0" inputmode="decimal"></label>
+      <label for="ps_start">Net PTO balance (H)<input id="ps_start" type="number" step="0.01" min="0" inputmode="decimal"></label>
       <label for="ps_asOf">Balance as of<input id="ps_asOf" type="date" value="${todayKey()}"></label>
       <label for="ps_accrual">Accrual per payday (H)<input id="ps_accrual" type="number" step="0.01" min="0" inputmode="decimal"></label>
     </div>
@@ -1699,12 +1736,17 @@ window.PTO = (() => {
     const L = ledger(), tk = todayKey();
     const todayInfo = L.days[tk];
     const todayBal = todayInfo ? todayInfo.bal : (tk > S.end ? L.endBal : S.start);   // end of today, incl. planned PTO
+    const netToday = r2(todayBal - plannedAfter(tk > S.asOf ? tk : S.asOf));            // ...and with every PTO day planned ahead taken out
+    // shutdown days still to come are not in the net: show what to keep for them
+    let shutAhead = 0;
+    Object.keys(S.days).forEach(k => { const e = S.days[k]; if (e.t === 'shut' && k > tk && k > S.asOf && k <= S.end) shutAhead += entryHours(e, parse(k)); });
+    shutAhead = r2(shutAhead);
     const lowBad = L.low.v < 0, fTotal = L.forfeit.reduce((a, b) => a + b.h, 0);
     const first = addDays(parse(S.asOf), 1), last = parse(S.end);
     const span = d => `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}`;
     let h = pendingHtml() + `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">${span(first)} TO ${span(last)} &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
     h += `<div class="p-stats">
-      <div class="p-stat"><span class="k">Balance today</span><span class="v">${fmt(todayBal)}H</span><span class="n">${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(S.start)}H ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
+      <div class="p-stat has-tip${netToday < 0 ? ' bad' : ''}"><span class="k">Net balance<button type="button" class="p-info" id="p-info" aria-label="About net balance" aria-describedby="p-tip-net">i</button></span><span class="v">${fmt(netToday)}H</span><span class="p-tip" id="p-tip-net" role="tooltip">YOUR PLANNED PTO TAKEN OUT<br>${shutAhead > 0 ? `KEEP ${fmt(shutAhead)}H FOR SHUTDOWN<br>` : ''}${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(netStart())}H NET ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
       <div class="p-stat"><span class="k">Planned PTO</span><span class="v">${fmt(L.used)}H</span><span class="n">${fmt(L.shutUsed)}H IS SHUTDOWN</span></div>
       <div class="p-stat${fTotal > 0 ? ' warn' : ''}"><span class="k">Dec 31 balance</span><span class="v">${L.decBefore == null ? '-' : fmt(L.decBefore) + 'H'}</span><span class="n">${fTotal > 0 ? `${fmt(fTotal)}H OVER THE ${fmt(S.cap)}H CAP, LOST JAN 1` : `UNDER THE ${fmt(S.cap)}H ROLLOVER CAP`}</span></div>
       <div class="p-stat${lowBad ? ' bad' : ''}"><span class="k">Lowest point</span><span class="v">${fmt(L.low.v)}H</span><span class="n">${L.low.k ? niceDate(L.low.k) : ''}${lowBad ? ' · OVERDRAWN' : ''}</span></div>
@@ -1732,12 +1774,12 @@ window.PTO = (() => {
     if (subTab === 'set') {
       const fld = (lbl, id, v, type) => `<label for="pf_${id}">${lbl}<input id="pf_${id}" data-f="${id}" type="${type || 'number'}" step="0.01" inputmode="decimal" value="${esc(v)}"></label>`;
       h += `<div class="p-panel" id="p-panel" role="tabpanel" aria-labelledby="ptab-set"><div class="p-form">
-        ${fld('Balance (H)', 'start', S.start)}${fld('Balance as of', 'asOf', S.asOf, 'date')}
+        ${fld('Net balance (H)', 'start', netStart())}${fld('Balance as of', 'asOf', S.asOf, 'date')}
         ${fld('Plan ends', 'end', S.end, 'date')}${fld('Accrual per payday (H)', 'accrual', S.accrual)}
         ${fld('Rollover cap Jan 1 (H)', 'cap', S.cap)}${fld('First payday', 'firstPay', S.firstPay, 'date')}
         ${fld('Mon to Thu day (H)', 'hMT', S.hMT)}${fld('Friday day (H)', 'hF', S.hF)}
         </div><div class="p-row"><button type="button" class="p-btn danger" id="p-reset">${confirmReset ? 'TAP AGAIN TO RESET EVERYTHING' : '[ RESET PLAN ]'}</button>${confirmReset ? '<button type="button" class="p-btn" id="p-reset-cancel">CANCEL</button>' : ''}</div>
-        <p class="p-note">ENTER YOUR REAL BALANCE AND ITS DATE TO RE-SYNC WITH YOUR PAYSTUB; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p>${syncHtml()}</div>`;
+        <p class="p-note">ENTER YOUR NET BALANCE (WITH ALL PTO YOU HAVE PLANNED ALREADY TAKEN OUT; SHUTDOWN DAYS COME OUT ON THEIR DATES) AND ITS DATE TO RE-SYNC; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p>${syncHtml()}</div>`;
     } else {
       h += `<div class="p-legend">
         <span><i class="p-sw sw-pto"></i>Your PTO</span>
@@ -1803,7 +1845,7 @@ window.PTO = (() => {
     if (e && e.t === 'hol')         b += btn('holoff', 'Working this day', 'danger') + btn('close', 'Keep holiday', 'quiet');
     else if (e && e.t === 'holoff') b += btn('holon', 'Restore paid holiday', 'hol') + btn('full', 'PTO full day', 'pto');
     else if (e && e.t === 'shut')   b += btn('shutfull', `Cover with PTO (${fmt(full)})`, 'pto') + btn('shutunpaid', 'Leave unpaid', 'shut');
-    else b += btn('full', `Full day (${fmt(full)})`, 'pto') + btn('half', `Half day (${fmt(r2(full / 2))})`, 'pto') + btn('addhol', 'Paid holiday', 'hol')
+    else b += btn('full', `Full day (${fmt(full)})`, 'pto') + btn('half', `Half day (${fmt(halfH(d))})`, 'pto') + btn('addhol', 'Paid holiday', 'hol')
       + (e && e.t === 'pto' ? btn('clear', 'Remove PTO', 'danger') : btn('close', 'Cancel', 'quiet'));
     b += '</div>';
     if (!(e && e.t === 'hol')) {
@@ -1864,7 +1906,7 @@ window.PTO = (() => {
     const k = openKey, e = S.days[k], name = e && e.n;
     if (a === 'close') { closeSheet(); return; }
     if (a === 'full')            put(k, { t: 'pto', full: true });
-    else if (a === 'half')       put(k, { t: 'pto', h: r2(fullH(parse(k)) / 2) });
+    else if (a === 'half')       put(k, { t: 'pto', h: halfH(parse(k)) });
     else if (a === 'clear')      clear(k);
     else if (a === 'addhol')     put(k, { t: 'hol', n: 'Company holiday' });
     else if (a === 'holoff')     put(k, { t: 'holoff', n: name });
@@ -1912,6 +1954,7 @@ window.PTO = (() => {
       if (mb) { showMonth(mb.dataset.month, '#p-mtoggle'); return; }
       const pg = e.target.closest('[data-page]');
       if (pg) { stepMonth(parseInt(pg.dataset.page, 10)); return; }
+      if (e.target.closest('#p-info')) { e.target.closest('.p-stat').classList.toggle('tip-open'); return; }   // tap opens the tip on touch screens
       if (e.target.closest('#p-update')) {
         subTab = 'set'; render();
         const inp = document.getElementById('pf_start');
@@ -1934,12 +1977,14 @@ window.PTO = (() => {
         const asOf = f === 'asOf' ? v : S.asOf, end = f === 'end' ? v : S.end;
         // the plan needs at least one day, and stays small enough to render (max ~3 years)
         if (f !== 'firstPay' && (end <= asOf || (parse(end) - parse(asOf)) / 864e5 > 1100)) { e.target.value = S[f]; return; }
-        S[f] = v;
+        if (f === 'asOf') setNet(netStart(), v);   // a new date keeps the net balance you see
+        else S[f] = v;
       }
       else {
         const n = parseFloat(v);
-        if (isNaN(n) || n < 0) { e.target.value = S[f]; return; }
-        S[f] = n;
+        if (isNaN(n) || n < 0) { e.target.value = f === 'start' ? netStart() : S[f]; return; }
+        if (f === 'start') setNet(r2(n), S.asOf);
+        else S[f] = n;
       }
       S.su = Date.now();
       changed();
@@ -2008,21 +2053,23 @@ window.PTO = (() => {
     if (!pending) syncMsg = 'THAT LINK COULD NOT BE READ. COPY THE CODE INSTEAD.';
   }
 
-  return { render, getMode, setMode, needsSetup, hasIncoming: () => incoming };
+  // the day lengths set in Settings; the timecard's targets and PTO credits follow these
+  const dayHours = () => ({ mt: S.hMT, f: S.hF });
+
+  return { render, getMode, setMode, dayHours, needsSetup, hasIncoming: () => incoming };
 })();
 </script>
 <script>
 // ── CONFIG ──
 const DAYS_CONFIG = [
-  { name: 'MONDAY',    defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, baseTarget: 8.25 },
-  { name: 'TUESDAY',   defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, baseTarget: 8.25 },
-  { name: 'WEDNESDAY', defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, baseTarget: 8.25 },
-  { name: 'THURSDAY',  defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60, baseTarget: 8.25 },
-  { name: 'FRIDAY',    defaultIn: '08:00', defaultOut: '15:30', defaultLunch: 30, baseTarget: 7.00 },
+  { name: 'MONDAY',    defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60 },
+  { name: 'TUESDAY',   defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60 },
+  { name: 'WEDNESDAY', defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60 },
+  { name: 'THURSDAY',  defaultIn: '08:00', defaultOut: '17:15', defaultLunch: 60 },
+  { name: 'FRIDAY',    defaultIn: '08:00', defaultOut: '15:30', defaultLunch: 30 },
 ];
 const LUNCH_OPTIONS  = [30, 45, 60];
 const HOLIDAY_HOURS  = 8.0;
-const PTO_HOURS      = 8.25;
 const STORAGE_KEY    = 'timecard_v3';
 const THEME_KEY      = 'timecard_theme';
 
@@ -2055,7 +2102,7 @@ DAYS_CONFIG.forEach((day, i) => {
       </div>
     </div>
     <div class="holiday-display" id="hol-display-${i}">▓ HOLIDAY — 8.00H ▓</div>
-    <div class="pto-display" id="pto-display-${i}">▓ PTO — ${DAYS_CONFIG[i].baseTarget.toFixed(2)}H ▓</div>
+    <div class="pto-display" id="pto-display-${i}">▓ PTO ▓</div>
     <div class="off-display" id="off-display-${i}">▓ SHUTDOWN — UNPAID ▓</div>
     <div class="away-block" id="away-block-${i}">
       <div class="away-header">
@@ -2132,16 +2179,27 @@ function setPressed(el, active) {
   el.setAttribute('aria-pressed', String(active));
 }
 
+// a day's normal hours, from the planner's Settings (8.25 Mon–Thu, 7.00 Fri by default)
+function baseTarget(i) {
+  const h = PTO.dayHours(), v = i === 4 ? h.f : h.mt;
+  return typeof v === 'number' && v > 0 ? v : (i === 4 ? 7.00 : 8.25);
+}
+// Mon–Thu in a Friday-holiday week: the holiday credits 8H for a shorter Friday, so the extra spreads over Mon–Thu
+function rippleTarget() {
+  return Math.round((baseTarget(0) - (HOLIDAY_HOURS - baseTarget(4)) / 4) * 100) / 100;
+}
+const fmtH = h => h.toFixed(2) + 'H';
+
 // per-day effective target (accounts for Friday holiday ripple on Mon–Thu)
 function effectiveTarget(i) {
   if (isOffDay(i)) return 0; // unpaid shutdown: nothing owed
-  if (isPtoDay(i)) return DAYS_CONFIG[i].baseTarget; // PTO credits the day's normal hours (7H on Friday)
+  if (isPtoDay(i)) return (i < 4 && fridayIsHoliday()) ? rippleTarget() : baseTarget(i); // PTO credits the day's normal hours (7H on Friday, 8H Mon–Thu in a Friday-holiday week)
   if (isHolidayDay(i)) {
     if (i === 4) return HOLIDAY_HOURS;
-    return (i < 4 && fridayIsHoliday()) ? 8.00 : DAYS_CONFIG[i].baseTarget;
+    return (i < 4 && fridayIsHoliday()) ? rippleTarget() : baseTarget(i);
   }
-  if (i < 4 && fridayIsHoliday()) return 8.00;
-  return DAYS_CONFIG[i].baseTarget;
+  if (i < 4 && fridayIsHoliday()) return rippleTarget();
+  return baseTarget(i);
 }
 
 // dynamic weekly target
@@ -2517,9 +2575,10 @@ function update() {
       return;
     }
     if (isPtoDay(i)) {
-      const ptoH = DAYS_CONFIG[i].baseTarget;
+      const ptoH = eTarget;
       total += ptoH;
-      pill.textContent = ptoH.toFixed(2) + 'H';
+      pill.textContent = fmtH(ptoH);
+      document.getElementById(`pto-display-${i}`).textContent = `▓ PTO — ${fmtH(ptoH)} ▓`;
       pill.className   = 'pill pill-pto';
       return;
     }
@@ -2586,13 +2645,15 @@ function updateBanner() {
   for (let i = 0; i < 4; i++) {
     if (isHolidayDay(i)) {
       if (fridayIsHoliday()) {
-        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — TARGET ADJUSTED TO 40H.`);
+        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — TARGET ADJUSTED TO ${+weeklyTarget().toFixed(2)}H.`);
       } else {
-        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — 8.00H CREDITED. WEEK IS 0.25H SHORT. MAKE UP TIME.`);
+        const short = baseTarget(i) - HOLIDAY_HOURS;
+        lines.push(`${DAYS_CONFIG[i].name} HOLIDAY ACTIVE — ${fmtH(HOLIDAY_HOURS)} CREDITED. ` + (short > 0.001
+          ? `WEEK IS ${fmtH(short)} SHORT. MAKE UP TIME.` : 'WEEK ON TARGET.'));
       }
     }
     if (isPtoDay(i)) {
-      lines.push(`${DAYS_CONFIG[i].name} PTO ACTIVE — 8.25H CREDITED. WEEK ON TARGET.`);
+      lines.push(`${DAYS_CONFIG[i].name} PTO ACTIVE — ${fmtH(effectiveTarget(i))} CREDITED. WEEK ON TARGET.`);
     }
   }
   for (let i = 0; i < 5; i++) {
@@ -2600,10 +2661,12 @@ function updateBanner() {
     if (partialPto[i] > 0) lines.push(`${DAYS_CONFIG[i].name} PLANNED PTO — ${partialPto[i].toFixed(2)}H CREDITED TO THIS DAY.`);
   }
   if (fridayIsHoliday()) {
-    lines.push('FRIDAY HOLIDAY ACTIVE — LEAVE AT 17:00 MON–THU');
+    // a default Mon–Thu day (clock in, lunch) worked to the ripple target
+    const leave = toMin(DAYS_CONFIG[0].defaultIn) + DAYS_CONFIG[0].defaultLunch + Math.round(rippleTarget() * 60);
+    lines.push(`FRIDAY HOLIDAY ACTIVE — LEAVE AT ${String(Math.floor(leave / 60)).padStart(2, "0")}:${String(leave % 60).padStart(2, "0")} MON–THU`);
   }
   if (isPtoDay(4)) {
-    lines.push('FRIDAY PTO ACTIVE — 7.00H CREDITED. WEEK ON TARGET.');
+    lines.push(`FRIDAY PTO ACTIVE — ${fmtH(baseTarget(4))} CREDITED. WEEK ON TARGET.`);
   }
 
   if (lines.length === 0) {

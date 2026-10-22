@@ -24,8 +24,8 @@ Environment overrides (optional):
 
 | Suite | Covers |
 |---|---|
-| `timecard-rules.test.js` | Quarter-hour rounding, lunch, away blocks, holiday = 8.00H, PTO = the day's normal hours (8.25 Mon-Thu, 7.00 Fri), the Friday-holiday ripple, part-day PTO, unpaid shutdown, week dates, Reset Week |
-| `planner-logic.test.js` | Balance projection, payday accrual, PTO cost per weekday, free holidays, Jan 1 rollover cap, overdraw warnings, the `setMode`/`getMode` contract the timecard relies on |
+| `timecard-rules.test.js` | Quarter-hour rounding, lunch, away blocks, holiday = 8.00H, PTO = the day's normal hours (8.25 Mon-Thu, 7.00 Fri; 8.00 Mon-Thu in a Friday-holiday week), the Friday-holiday ripple, day hours taken from planner Settings, part-day PTO, unpaid shutdown, week dates, Reset Week |
+| `planner-logic.test.js` | Balance projection, payday accrual, PTO cost per weekday (8.00 Mon-Thu in a Friday-holiday week), free holidays, Jan 1 rollover cap, overdraw warnings, the `setMode`/`getMode` contract the timecard relies on |
 | `planner-ui.test.js` | Month pager, quick-pick month list, swipe, Calendar/Settings sub-tabs, red-month markers, narrow screens |
 | `setup-sync.test.js` | First-launch setup and its validation, two-device sync (merge rules, links, undo), rejection of tampered codes, pre-sync plans |
 | `behavior.test.js` | Blocked storage, week rollover while the app is open, new-week prompt, dialog focus, balance projection and editable plan dates |

@@ -64,14 +64,14 @@ const ok = (name, cond, extra = '') => { (cond ? pass++ : fail++); console.log((
   t = await mk({ date: '2027-02-10T09:00:00', tab: 'pto' }); await t.page.goto(URL);
   let tile = await t.page.evaluate(() => [...document.querySelectorAll('.p-stat')][0].innerText.replace(/\n+/g, ' | '));
   const projected = parseFloat(tile.match(/([\d.]+)H/)[1]);
-  ok('R2 balance tile is projected, not the stale start', projected > 15.85 && /BALANCE TODAY/i.test(tile), tile);
+  ok('R2 balance tile is projected, not the stale start', projected > 15.85 && /NET BALANCE/i.test(tile), tile);
   // update flow: real balance on a mid-month date
   await t.page.click('#p-update');
   ok('R2 [UPDATE] opens the settings tab and focuses the balance field', await t.page.evaluate(() => document.getElementById('ptab-set').getAttribute('aria-selected') === 'true' && document.activeElement.id === 'pf_start'));
   await t.page.fill('#pf_start', '30.5'); await t.page.dispatchEvent('#pf_start', 'change');
   await t.page.fill('#pf_asOf', '2027-02-05'); await t.page.dispatchEvent('#pf_asOf', 'change');
   await t.page.click('#ptab-cal'); await monthCount(t.page);
-  const d = await t.page.evaluate(() => { const tl = [...document.querySelectorAll('.p-stat')][0].innerText.replace(/\n+/g, ' | '); return { tile: tl, firstMonth: document.querySelector('.p-mitem:not(.p-mnow)').getAttribute('aria-label'),
+  const d = await t.page.evaluate(() => { const tl = [...document.querySelectorAll('.p-stat')][0].textContent.replace(/\s+/g, ' '); return { tile: tl, firstMonth: document.querySelector('.p-mitem:not(.p-mnow)').getAttribute('aria-label'),
     feb4: !!document.querySelector('button.p-day[data-k="2027-02-04"]'), feb8: !!document.querySelector('button.p-day[data-k="2027-02-08"]'), feb8dim: !!document.querySelector('.p-day.wk'), nan: document.body.innerText.includes('NaN') }; });
   ok('R2 mid-month as-of: calendar starts in that month', /February 2027/i.test(d.firstMonth), d.firstMonth);
   ok('R2 days before as-of are not editable, after are', !d.feb4 && d.feb8);
