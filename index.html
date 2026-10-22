@@ -15,7 +15,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
 <link rel="shortcut icon" href="icons/favicon.ico">
 <meta name="msapplication-TileColor" content="#1a1a1a">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'">
 <script>
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js");
@@ -1498,10 +1498,96 @@
 </div>
 
 <script>
+// ── CLOUD BACKUP ──
+// Where the Cloudflare Worker answers /api/backup (signed in through Access), the plan and this week's
+// punches are backed up after every save, and the newest copy wins: opening the app on a device whose
+// copy is older loads the cloud copy. GitHub Pages and file:// have no API, so nothing changes there.
+window.Backup = (() => {
+  const KEYS = ['pto-planner-v1', 'timecard_v3'], AT = 'backup-updated', URL_ = '/api/backup';
+  const raw = {
+    get(k)    { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  };
+  const localAt = () => Number(raw.get(AT)) || 0;
+  let on = false, ready = false, tracking = false, timer = null, inFlight = false, lastCheck = 0;
+  let state = 'idle', savedAt = 0;   // idle | saving | saved | offline | signin
+
+  function setState(s) {
+    state = s;
+    const el = document.getElementById('p-backup');
+    if (el) el.textContent = text();
+  }
+  function text() {
+    const t = savedAt ? new Date(savedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toUpperCase() : '';
+    if (state === 'signin')  return 'CLOUD BACKUP: SIGN IN AGAIN (RELOAD THE APP) TO KEEP BACKING UP.';
+    if (state === 'offline') return 'CLOUD BACKUP: OFFLINE. CHANGES ARE SAVED HERE AND BACK UP WHEN YOU RECONNECT.';
+    if (state === 'saving')  return 'CLOUD BACKUP: SAVING...';
+    return savedAt ? `CLOUD BACKUP: UP TO DATE (${t}).` : 'CLOUD BACKUP: ON. EVERY CHANGE IS BACKED UP.';
+  }
+
+  // redirect:'manual' turns an expired Access session (a redirect to the sign-in page) into something we can see
+  async function call(method, body) {
+    let res;
+    try {
+      res = await fetch(URL_, { method, redirect: 'manual', cache: 'no-store', headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+    } catch (e) { setState(navigator.onLine === false ? 'offline' : 'signin'); return null; }
+    if (res.type === 'opaqueredirect' || res.status === 401) { setState('signin'); return null; }
+    if (!res.ok || !res.headers.get('x-timecard-backup')) return null;
+    return res.json();
+  }
+
+  // a newer cloud copy replaces this device's copy; the page reloads so every part of the app reads it fresh
+  function apply(remote) {
+    KEYS.forEach(k => { if (remote.data && typeof remote.data[k] === 'string') raw.set(k, remote.data[k]); });
+    raw.set(AT, String(remote.updated));
+    location.reload();
+  }
+
+  async function push() {
+    timer = null;
+    if (inFlight) { queue(); return; }
+    inFlight = true; setState('saving');
+    const data = {};
+    KEYS.forEach(k => { const v = raw.get(k); if (v != null) data[k] = v; });
+    const r = await call('PUT', { updated: localAt() || Date.now(), data });
+    inFlight = false;
+    if (r) { savedAt = Date.now(); setState('saved'); }
+  }
+  function queue() { if (on && ready) { clearTimeout(timer); timer = setTimeout(push, 1500); } }
+
+  async function check() {
+    lastCheck = Date.now();
+    const remote = await call('GET');
+    if (!remote) return;
+    on = true; ready = true;
+    const mine = localAt(), hasLocal = KEYS.some(k => raw.get(k) != null);
+    if (remote.updated > mine) return apply(remote);
+    if (mine > remote.updated || (!remote.updated && hasLocal)) { if (!mine) raw.set(AT, String(Date.now())); push(); }
+    else { savedAt = remote.updated; setState('saved'); }
+    if (window.PTO && PTO.render) PTO.render();   // shows the backup line in the planner
+  }
+
+  if (/^https?:$/.test(location.protocol)) {
+    check();
+    // a phone resumed after editing on the PC picks up the newer copy; a reconnect sends what was saved offline
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && !timer && !inFlight && Date.now() - lastCheck > 3e4) check(); });
+    window.addEventListener('online', () => { if (on) push(); else check(); });
+    // saves made while the page starts up (week rollover, defaults) are not edits; anything after is
+    document.addEventListener('DOMContentLoaded', () => { tracking = true; });
+  }
+
+  return {
+    get on() { return on; },
+    text,
+    // a save to a backed-up key stamps this device's copy and sends it (if the first check is still pending, check() sends it)
+    touched(k) { if (!tracking || !KEYS.includes(k)) return; raw.set(AT, String(Date.now())); queue(); },
+  };
+})();
+
 // localStorage can throw (private mode, blocked site data); the app keeps working without saving
 const store = {
   get(k)    { try { return localStorage.getItem(k); } catch (e) { return null; } },
-  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  set(k, v) { try { localStorage.setItem(k, v); Backup.touched(k); } catch (e) {} },
   remove(k) { try { localStorage.removeItem(k); } catch (e) {} },
 };
 </script>
@@ -1741,6 +1827,7 @@ window.PTO = (() => {
     <div class="p-row"><button type="button" class="p-btn hol" data-sync="setup-save">[ SAVE &amp; START ]</button></div></div>
     <div class="p-panel"><div class="p-subhead">ALREADY SET UP ON ANOTHER DEVICE?</div>${pasteBox()}</div>`;
   const syncHtml = () => `<div class="p-sync"><div class="p-subhead">SYNC DEVICES</div>
+    ${window.Backup && Backup.on ? `<p class="p-note" id="p-backup" role="status">${esc(Backup.text())}</p>` : ''}
     <p class="p-note">EDIT ON ANY DEVICE, THEN MOVE THE PLAN ACROSS. ON MERGE THE NEWER EDIT TO EACH DAY WINS, SO NOTHING IS LOST.</p>
     <div class="p-row"><button type="button" class="p-btn" data-sync="code-get">[ GET CODE ]</button></div>
     ${codeOpen ? `<textarea class="p-code" id="p-code-out" readonly rows="4" spellcheck="false" aria-label="Sync code">${esc(codeOut)}</textarea>

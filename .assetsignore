@@ -7,6 +7,7 @@
 .claude
 node_modules
 tests
+worker
 wrangler.jsonc
 package.json
 package-lock.json

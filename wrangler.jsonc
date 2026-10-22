@@ -1,12 +1,23 @@
 {
-	// Serves the PWA from Cloudflare as static files. The name must match the Worker in the dashboard.
+	// Serves the PWA from Cloudflare plus a small backup API. The name must match the Worker in the dashboard.
 	"name": "timecard-helper",
 	"compatibility_date": "2026-10-13",
+	"main": "worker/index.js",
 	"assets": {
 		"directory": "./",
+		"binding": "ASSETS",
 		// keep /index.html served as-is: the service worker caches and falls back to it, and a redirected response breaks offline launch
 		"html_handling": "none",
 		// so the bare address (and the installed app's start URL "./") still opens index.html
-		"not_found_handling": "single-page-application"
+		"not_found_handling": "single-page-application",
+		// only the backup API runs Worker code; everything else is a plain file
+		"run_worker_first": ["/api/*"]
+	},
+	// no database_id: the first deploy creates the database and links it to the Worker
+	"d1_databases": [{ "binding": "DB" }],
+	"vars": {
+		// Cloudflare Access app in front of this Worker; the API checks its token against these (not secrets)
+		"ACCESS_ISSUER": "https://billowing-moon-7961.cloudflareaccess.com",
+		"ACCESS_AUD": "cc19b33ec8e812968a902e87f1db92a39c2e3cc41b1fbefa4b04dbcbf90bc998"
 	}
 }
