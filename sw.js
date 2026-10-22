@@ -1,4 +1,4 @@
-const CACHE = "timecard-v26";
+const CACHE = "timecard-v27";
 const FILES = [
   "./index.html",
   "./manifest.json",
@@ -28,6 +28,16 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
+  // Page loads try the network first so a new version shows on the next launch; offline falls back to the cache
+  if (e.request.mode === "navigate") {
+    e.respondWith(
+      fetch(e.request, { cache: "no-cache" }).then(res => {
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(cache => cache.put("./index.html", copy)); }
+        return res;
+      }).catch(() => caches.match(e.request).then(cached => cached || caches.match("./index.html")))
+    );
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
