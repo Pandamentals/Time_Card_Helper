@@ -52,22 +52,28 @@ const t = suite('Planner logic');
   t.ok('no page errors (half / custom)', a.errors.length === 0, a.errors.join('|'));
   await a.ctx.close();
 
-  // the balance typed in is NET: planned PTO after its date is already out of it (Carlos: 17.59 gross, Fri Oct 23 off -> 10.59)
-  a = await openApp(b, { date: '2026-10-22T09:00:00', plan: planWith({ '2026-10-23': { t: 'pto', full: true, u: 9 } }, { start: 30, asOf: '2026-10-01' }), tab: 'pto' });
+  // the balance typed in is the plain AVAILABLE balance; the calendar takes planned days out; the tile shows NET
+  // (Carlos: 15.85 on Sep 22, paydays Oct 8 + Oct 22, Oct 16 PTO 7.50 -> 17.59 today, Fri Oct 23 off -> net 10.59)
+  a = await openApp(b, { date: '2026-10-22T09:00:00', plan: planWith({ '2026-10-16': { t: 'pto', h: 7.5, u: 9 }, '2026-10-23': { t: 'pto', full: true, u: 9 } }, { start: 30, asOf: '2026-10-01' }), tab: 'pto' });
   await a.page.click('#ptab-set');
-  await a.page.evaluate(() => { const d = document.getElementById('pf_asOf'); d.value = '2026-10-22'; d.dispatchEvent(new Event('change', { bubbles: true })); });
-  await a.page.evaluate(() => { const i = document.getElementById('pf_start'); i.value = '10.59'; i.dispatchEvent(new Event('change', { bubbles: true })); });
+  t.ok('settings asks for the available balance', /Available balance/i.test(await a.page.textContent('label[for="pf_start"]')));
+  t.ok('available balance tip is hidden until asked for', await a.page.locator('#p-tip-avail').isHidden());
+  await a.page.hover('label[for="pf_start"] .p-info');
+  t.ok('hovering its info mark explains to leave future PTO in', await a.page.locator('#p-tip-avail').isVisible() && /WITHOUT ANY FUTURE PTO TAKEN OUT/.test(await a.page.textContent('#p-tip-avail')));
+  await a.page.mouse.move(0, 0);
+  await a.page.evaluate(() => { const d = document.getElementById('pf_asOf'); d.value = '2026-09-22'; d.dispatchEvent(new Event('change', { bubbles: true })); });
+  await a.page.evaluate(() => { const i = document.getElementById('pf_start'); i.value = '15.85'; i.dispatchEvent(new Event('change', { bubbles: true })); });
   const stored = () => a.page.evaluate(() => JSON.parse(localStorage.getItem('pto-planner-v1')).start);
-  t.ok('net 10.59 with Oct 23 (7.00) planned is kept as 17.59 before that day', await stored() === 17.59, String(await stored()));
-  t.ok('settings field shows the net balance back', await a.page.inputValue('#pf_start') === '10.59');
-  t.ok('net balance tile shows 10.59 (no double count)', (await tile(a.page, 'net balance')).v === '10.59H', JSON.stringify(await tile(a.page, 'net balance')));
+  t.ok('available 15.85 is stored as typed', await stored() === 15.85, String(await stored()));
+  t.ok('net balance tile = 17.59 today - Oct 23 (7.00) = 10.59', (await tile(a.page, 'net balance')).v === '10.59H', JSON.stringify(await tile(a.page, 'net balance')));
   await a.page.click('#ptab-cal'); await gotoMonth(a.page, '2026-10');
+  t.ok('calendar takes Oct 16 out and lands on 17.59 today', /balance 17\.59 hours/.test(await cellBal(a.page, '2026-10-22')), await cellBal(a.page, '2026-10-22'));
   t.ok('Oct 23 ends at 10.59', /balance 10\.59 hours/.test(await cellBal(a.page, '2026-10-23')), await cellBal(a.page, '2026-10-23'));
   await a.page.click('button.p-day[data-k="2026-10-26"]'); await a.page.click('[data-act="full"]');
   t.ok('a day planned later comes out of the net (10.59 - 8.25 = 2.34)', (await tile(a.page, 'net balance')).v === '2.34H');
   await a.page.click('button.p-day[data-k="2026-10-23"]'); await a.page.click('[data-act="clear"]');
   t.ok('removing a planned day gives its hours back (2.34 + 7.00 = 9.34)', (await tile(a.page, 'net balance')).v === '9.34H');
-  t.ok('no page errors (net balance)', a.errors.length === 0, a.errors.join('|'));
+  t.ok('no page errors (available / net balance)', a.errors.length === 0, a.errors.join('|'));
   await a.ctx.close();
 
   // Jan 1 rollover cap

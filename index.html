@@ -1071,12 +1071,12 @@
   .p-tile-btn:hover { border-color: rgb(var(--phosphor-rgb) / 0.4667); color: var(--phosphor); }
   .p-tile-btn:focus-visible { outline: 1px solid var(--phosphor); outline-offset: 2px; }
   /* details behind a hover / tap tip instead of under the number */
-  .p-stat.has-tip { position: relative; }
+  .p-stat.has-tip, .p-form label.has-tip { position: relative; }
   .p-info {
     font: inherit; font-size: 9px; line-height: 1; padding: 1px 3px; margin-left: 4px; vertical-align: 1px; cursor: help;
     background: transparent; color: var(--phosphor-dim); border: 1px solid var(--phosphor-edge);
   }
-  .p-info:hover, .p-stat.tip-open .p-info { color: var(--phosphor); border-color: rgb(var(--phosphor-rgb) / 0.4667); }
+  .p-info:hover, .tip-open .p-info { color: var(--phosphor); border-color: rgb(var(--phosphor-rgb) / 0.4667); }
   .p-info:focus-visible { outline: 1px solid var(--phosphor); outline-offset: 2px; }
   .p-tip {
     display: none; position: absolute; left: 6px; right: 6px; top: 22px; z-index: 5; padding: 6px 8px;
@@ -1084,7 +1084,9 @@
     background: var(--screen); border: 1px solid var(--phosphor-accent); box-shadow: 0 0 8px rgb(var(--phosphor-rgb) / 0.25);
     pointer-events: none;   /* never blocks [ UPDATE ] underneath */
   }
-  .p-stat.has-tip .k:hover ~ .p-tip, .p-stat.has-tip .k:focus-within ~ .p-tip, .p-stat.tip-open .p-tip { display: block; }
+  .p-stat.has-tip .k:hover ~ .p-tip, .p-stat.has-tip .k:focus-within ~ .p-tip, .tip-open .p-tip,
+  .p-form .p-info:hover ~ .p-tip, .p-form .p-info:focus ~ .p-tip { display: block; }
+  .p-form .p-tip { left: 0; right: 0; top: 16px; text-transform: none; }
   .p-stat.warn { border-top-color: var(--amber-mid); }
   .p-stat.warn .v { color: var(--amber); text-shadow: 0 0 8px rgb(var(--amber-rgb) / 0.6); }
   .p-stat.bad { border-top-color: var(--red); background: rgb(var(--red-bg-rgb) / 0.6); }
@@ -1548,18 +1550,16 @@ window.PTO = (() => {
   const niceDate = k => { const d = parse(k); return `${DOWS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCDate()}`; };
   const todayKey = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
 
+  const AVAIL_TIP = '<button type="button" class="p-info" aria-label="About available balance" aria-describedby="p-tip-avail">i</button><span class="p-tip" id="p-tip-avail" role="tooltip">USE YOUR BALANCE WITHOUT ANY FUTURE PTO TAKEN OUT. THE CALENDAR TAKES EACH PLANNED DAY OUT ON ITS DATE.</span>';
+
   // ── NET BALANCE ──
-  // The balance you type in is NET: every PTO day you planned after its date is already taken out of it
-  // (company shutdown days are not: they come out of the balance on their dates).
-  // Inside, S.start stays the balance before those days, so the ledger below subtracts each one exactly once:
-  // removing a planned day gives its hours back, and a day planned later is taken out on its date.
+  // The balance you type in is the plain available balance on its date; the calendar takes each planned day out on its date.
+  // Net = a day's balance with every PTO day you planned after it taken out (shutdown days are shown separately).
   function plannedAfter(k) {
     let h = 0;
     Object.keys(S.days).forEach(dk => { const e = S.days[dk]; if (dk > k && dk <= S.end && e.t === 'pto') h += entryHours(e, parse(dk)); });
     return r2(h);
   }
-  const netStart = () => r2(S.start - plannedAfter(S.asOf));
-  const setNet   = (net, asOf) => { S.asOf = asOf; S.start = r2(net + plannedAfter(asOf)); };
 
   // ── LEDGER: walk day by day from the as-of date, applying payday accrual, PTO use and the Jan 1 cap ──
   function ledger() {
@@ -1706,7 +1706,7 @@ window.PTO = (() => {
     if (!validDate(asOf))            return err('PICK THE DATE THAT BALANCE IS FROM.');
     if (asOf >= S.end)               return err(`THAT DATE MUST BE BEFORE THE PLAN ENDS (${S.end}).`);
     if (isNaN(acc) || acc <= 0)      return err('ENTER HOW MANY HOURS YOU EARN EACH PAYDAY.');
-    setNet(r2(bal), asOf); S.accrual = r2(acc); S.su = Date.now();
+    S.start = r2(bal); S.asOf = asOf; S.accrual = r2(acc); S.su = Date.now();
     changed();
   }
 
@@ -1722,7 +1722,7 @@ window.PTO = (() => {
   };
   const setupHtml = () => `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">FIRST-TIME SETUP &nbsp;|&nbsp; ENTER YOUR OWN NUMBERS</div></div>
     <div class="p-panel"><div class="p-form">
-      <label for="ps_start">Net PTO balance (H)<input id="ps_start" type="number" step="0.01" min="0" inputmode="decimal"></label>
+      <label for="ps_start" class="has-tip"><span>Available PTO balance (H)<button type="button" class="p-info" aria-label="About available balance" aria-describedby="p-tip-setup">i</button><span class="p-tip" id="p-tip-setup" role="tooltip">USE YOUR BALANCE WITHOUT ANY FUTURE PTO TAKEN OUT. THE CALENDAR TAKES EACH PLANNED DAY OUT ON ITS DATE.</span></span><input id="ps_start" type="number" step="0.01" min="0" inputmode="decimal"></label>
       <label for="ps_asOf">Balance as of<input id="ps_asOf" type="date" value="${todayKey()}"></label>
       <label for="ps_accrual">Accrual per payday (H)<input id="ps_accrual" type="number" step="0.01" min="0" inputmode="decimal"></label>
     </div>
@@ -1754,7 +1754,7 @@ window.PTO = (() => {
     const span = d => `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}`;
     let h = pendingHtml() + `<div><div class="p-title">PTO PLANNER</div><div class="p-sub">${span(first)} TO ${span(last)} &nbsp;|&nbsp; +${fmt(S.accrual)}H EVERY OTHER THURSDAY</div></div>`;
     h += `<div class="p-stats">
-      <div class="p-stat has-tip${netToday < 0 ? ' bad' : ''}"><span class="k">Net balance<button type="button" class="p-info" id="p-info" aria-label="About net balance" aria-describedby="p-tip-net">i</button></span><span class="v">${fmt(netToday)}H</span><span class="p-tip" id="p-tip-net" role="tooltip">YOUR PLANNED PTO TAKEN OUT<br>${shutAhead > 0 ? `KEEP ${fmt(shutAhead)}H FOR SHUTDOWN<br>` : ''}${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(netStart())}H NET ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
+      <div class="p-stat has-tip${netToday < 0 ? ' bad' : ''}"><span class="k">Net balance<button type="button" class="p-info" id="p-info" aria-label="About net balance" aria-describedby="p-tip-net">i</button></span><span class="v">${fmt(netToday)}H</span><span class="p-tip" id="p-tip-net" role="tooltip">YOUR PLANNED PTO TAKEN OUT<br>${shutAhead > 0 ? `KEEP ${fmt(shutAhead)}H FOR SHUTDOWN<br>` : ''}${tk > S.asOf && tk <= S.end ? `PROJECTED FROM ${fmt(S.start)}H AVAILABLE ON ${niceDate(S.asOf)}` : `AS OF ${niceDate(S.asOf)}`}</span><button type="button" class="p-tile-btn" id="p-update">[ UPDATE ]</button></div>
       <div class="p-stat"><span class="k">Planned PTO</span><span class="v">${fmt(L.used)}H</span><span class="n">${fmt(L.shutUsed)}H IS SHUTDOWN</span></div>
       <div class="p-stat${fTotal > 0 ? ' warn' : ''}"><span class="k">Dec 31 balance</span><span class="v">${L.decBefore == null ? '-' : fmt(L.decBefore) + 'H'}</span><span class="n">${fTotal > 0 ? `${fmt(fTotal)}H OVER THE ${fmt(S.cap)}H CAP, LOST JAN 1` : `UNDER THE ${fmt(S.cap)}H ROLLOVER CAP`}</span></div>
       <div class="p-stat${lowBad ? ' bad' : ''}"><span class="k">Lowest point</span><span class="v">${fmt(L.low.v)}H</span><span class="n">${L.low.k ? niceDate(L.low.k) : ''}${lowBad ? ' · OVERDRAWN' : ''}</span></div>
@@ -1780,14 +1780,14 @@ window.PTO = (() => {
       <button type="button" role="tab" class="p-subtab" id="ptab-set" data-subtab="set" aria-selected="${subTab === 'set'}" aria-controls="p-panel" tabindex="${subTab === 'set' ? 0 : -1}">[ SETTINGS ]</button></div>`;
 
     if (subTab === 'set') {
-      const fld = (lbl, id, v, type) => `<label for="pf_${id}">${lbl}<input id="pf_${id}" data-f="${id}" type="${type || 'number'}" step="0.01" inputmode="decimal" value="${esc(v)}"></label>`;
+      const fld = (lbl, id, v, type, tip) => `<label for="pf_${id}"${tip ? ' class="has-tip"' : ''}>${tip ? `<span>${lbl}${tip}</span>` : lbl}<input id="pf_${id}" data-f="${id}" type="${type || 'number'}" step="0.01" inputmode="decimal" value="${esc(v)}"></label>`;
       h += `<div class="p-panel" id="p-panel" role="tabpanel" aria-labelledby="ptab-set"><div class="p-form">
-        ${fld('Net balance (H)', 'start', netStart())}${fld('Balance as of', 'asOf', S.asOf, 'date')}
+        ${fld('Available balance (H)', 'start', S.start, 'number', AVAIL_TIP)}${fld('Balance as of', 'asOf', S.asOf, 'date')}
         ${fld('Plan ends', 'end', S.end, 'date')}${fld('Accrual per payday (H)', 'accrual', S.accrual)}
         ${fld('Rollover cap Jan 1 (H)', 'cap', S.cap)}${fld('First payday', 'firstPay', S.firstPay, 'date')}
         ${fld('Mon to Thu day (H)', 'hMT', S.hMT)}${fld('Friday day (H)', 'hF', S.hF)}
         </div><div class="p-row"><button type="button" class="p-btn danger" id="p-reset">${confirmReset ? 'TAP AGAIN TO RESET EVERYTHING' : '[ RESET PLAN ]'}</button>${confirmReset ? '<button type="button" class="p-btn" id="p-reset-cancel">CANCEL</button>' : ''}</div>
-        <p class="p-note">ENTER YOUR NET BALANCE (WITH ALL PTO YOU HAVE PLANNED ALREADY TAKEN OUT; SHUTDOWN DAYS COME OUT ON THEIR DATES) AND ITS DATE TO RE-SYNC; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p>${syncHtml()}</div>`;
+        <p class="p-note">ENTER YOUR AVAILABLE BALANCE AND ITS DATE TO RE-SYNC; THE CALENDAR TAKES EACH PLANNED DAY OUT ON ITS DATE; DAYS BEFORE THAT DATE ARE LEFT OUT. FULL DAYS FOLLOW THE HOURS ABOVE. TAP ANY WEEKDAY TO ADD, EDIT OR REMOVE PTO. HOLIDAYS AND SHUTDOWN DAYS CAN BE CHANGED THE SAME WAY.</p>${syncHtml()}</div>`;
     } else {
       h += `<div class="p-legend">
         <span><i class="p-sw sw-pto"></i>Your PTO</span>
@@ -1962,7 +1962,7 @@ window.PTO = (() => {
       if (mb) { showMonth(mb.dataset.month, '#p-mtoggle'); return; }
       const pg = e.target.closest('[data-page]');
       if (pg) { stepMonth(parseInt(pg.dataset.page, 10)); return; }
-      if (e.target.closest('#p-info')) { e.target.closest('.p-stat').classList.toggle('tip-open'); return; }   // tap opens the tip on touch screens
+      if (e.target.closest('.p-info')) { e.preventDefault(); e.target.closest('.has-tip').classList.toggle('tip-open'); return; }   // tap opens the tip on touch screens
       if (e.target.closest('#p-update')) {
         subTab = 'set'; render();
         const inp = document.getElementById('pf_start');
@@ -1985,14 +1985,12 @@ window.PTO = (() => {
         const asOf = f === 'asOf' ? v : S.asOf, end = f === 'end' ? v : S.end;
         // the plan needs at least one day, and stays small enough to render (max ~3 years)
         if (f !== 'firstPay' && (end <= asOf || (parse(end) - parse(asOf)) / 864e5 > 1100)) { e.target.value = S[f]; return; }
-        if (f === 'asOf') setNet(netStart(), v);   // a new date keeps the net balance you see
-        else S[f] = v;
+        S[f] = v;
       }
       else {
         const n = parseFloat(v);
-        if (isNaN(n) || n < 0) { e.target.value = f === 'start' ? netStart() : S[f]; return; }
-        if (f === 'start') setNet(r2(n), S.asOf);
-        else S[f] = n;
+        if (isNaN(n) || n < 0) { e.target.value = S[f]; return; }
+        S[f] = n;
       }
       S.su = Date.now();
       changed();
