@@ -637,6 +637,12 @@
   .pto-btn:hover { border-color: rgb(var(--amber-mid-rgb) / 0.2667); color: rgb(var(--amber-mid-rgb) / 0.4); }
   .pto-btn.active { background: var(--amber-bg); border-color: var(--amber-dim); color: var(--amber-mid); box-shadow: 0 0 4px rgb(var(--amber-mid-rgb) / 0.1333); }
 
+  .pto-hours {
+    width: 4.2em; font: inherit; font-size: 18px; letter-spacing: 1px; text-align: center; color: var(--amber);
+    background: var(--black); border: 1px solid var(--amber-dim); padding: 0 2px; margin: 0 2px; -moz-appearance: textfield;
+  }
+  .pto-hours::-webkit-inner-spin-button, .pto-hours::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .pto-hours:focus { outline: 1px solid var(--amber); outline-offset: 1px; }
   .pto-display {
     display: none;
     font-family: 'VT323', monospace;
@@ -1621,6 +1627,7 @@ window.PTO = (() => {
       if (!validDate(k) || !e || !['pto', 'hol', 'holoff', 'shut', 'none'].includes(e.t)) return null;
       const c = { t: e.t, u: Number.isFinite(e.u) ? e.u : 0 };
       if (e.full === true) c.full = true;
+      if (e.off === true) c.off = true;
       if (e.h !== undefined) { if (!Number.isFinite(e.h) || e.h < 0 || e.h > 24) return null; c.h = e.h; }
       if (typeof e.n === 'string') c.n = e.n.slice(0, 60);
       out.d[k] = c;
@@ -1924,9 +1931,10 @@ window.PTO = (() => {
     else if (a === 'custom') {
       const v = parseFloat(document.getElementById('p-customH').value);
       if (isNaN(v) || v < 0) return;
-      if (e && e.t === 'shut') put(k, { t: 'shut', h: r2(v), n: name });
+      const off = e && e.off ? { off: true } : {};   // a day off stays a day off when its hours change
+      if (e && e.t === 'shut') put(k, Object.assign({ t: 'shut', h: r2(v), n: name }, off));
       else if (v === 0) clear(k);
-      else put(k, { t: 'pto', h: r2(v) });
+      else put(k, Object.assign({ t: 'pto', h: r2(v) }, off));
     }
     if (name && S.days[k] && S.days[k].t !== 'none' && !S.days[k].n) S.days[k].n = name;
     openKey = null; changed();
@@ -2031,6 +2039,7 @@ window.PTO = (() => {
     if (e.t === 'holoff') return { mode: 'none', hours: 0, name, working: true };
     const h = entryHours(e, d);
     if (e.t === 'shut' && h === 0) return { mode: 'off', hours: 0, name, working: false };
+    if (e.off && h > 0)            return { mode: 'pto', hours: h, name, working: false };   // whole day off on fewer PTO hours
     if (h >= fullH(d) - 0.001)     return { mode: 'pto', hours: h, name, working: false };
     return { mode: h > 0 ? 'partial' : 'none', hours: h, name, working: false };
   }
@@ -2049,6 +2058,17 @@ window.PTO = (() => {
     changed();
   }
 
+  // The timecard's PTO hours box: the whole day off, charged h hours (a full day is stored as full, fewer as off).
+  function setPtoHours(k, h) {
+    const e = S.days[k], base = DEFAULT.days[k], d = parse(k);
+    const name = (e && e.n) || (base && base.n) || '';
+    const t = (e && e.t === 'shut') || (base && base.t === 'shut') ? 'shut' : 'pto';
+    const entry = h >= fullH(d) - 0.001 ? { t, full: true } : { t, h: r2(h), off: true };
+    if (name) entry.n = name;
+    put(k, entry);
+    changed();
+  }
+
   // a sync link opened on this device: stash it for confirmation (never applied silently)
   let incoming = false;
   const m = /^#sync=([A-Za-z0-9_-]+)$/.exec(location.hash);
@@ -2062,7 +2082,7 @@ window.PTO = (() => {
   // the day lengths set in Settings; the timecard's targets and PTO credits follow these
   const dayHours = () => ({ mt: S.hMT, f: S.hF });
 
-  return { render, getMode, setMode, dayHours, needsSetup, hasIncoming: () => incoming };
+  return { render, getMode, setMode, setPtoHours, dayHours, needsSetup, hasIncoming: () => incoming };
 })();
 </script>
 <script>
@@ -2108,7 +2128,7 @@ DAYS_CONFIG.forEach((day, i) => {
       </div>
     </div>
     <div class="holiday-display" id="hol-display-${i}">▓ HOLIDAY — 8.00H ▓</div>
-    <div class="pto-display" id="pto-display-${i}">▓ PTO ▓</div>
+    <div class="pto-display" id="pto-display-${i}">▓ PTO <input class="pto-hours" id="pto-h-${i}" data-day="${i}" type="number" step="0.25" min="0.25" max="24" inputmode="decimal" aria-label="PTO hours for ${day.name.toLowerCase()}">H ▓</div>
     <div class="off-display" id="off-display-${i}">▓ SHUTDOWN — UNPAID ▓</div>
     <div class="away-block" id="away-block-${i}">
       <div class="away-header">
@@ -2516,6 +2536,16 @@ function setDayMode(i, mode) {
   if (mode !== 'off') setPressed(document.querySelector(`.${mode}-btn[data-day="${i}"]`), true);
 }
 
+// ── PTO HOURS BOX: a day off charged fewer hours (e.g. 5 of Friday's 7 after working extra) ──
+container.addEventListener('change', e => {
+  const box = e.target.closest('.pto-hours');
+  if (!box) return;
+  const i = parseInt(box.dataset.day, 10), v = parseFloat(box.value);
+  if (isNaN(v) || v <= 0 || v > 24) { box.blur(); update(); return; }
+  PTO.setPtoHours(weekKeys()[i], v);
+  syncFromPlanner();
+});
+
 // ── HOLIDAY / PTO TOGGLE ──
 // The planner is the source of truth: the buttons write to it, then the week re-syncs from it.
 container.addEventListener('click', e => {
@@ -2581,10 +2611,11 @@ function update() {
       return;
     }
     if (isPtoDay(i)) {
-      const ptoH = eTarget;
+      const ptoH = ptoHours[i] || eTarget;   // the planner's hours for this day; a full day by default
       total += ptoH;
       pill.textContent = fmtH(ptoH);
-      document.getElementById(`pto-display-${i}`).textContent = `▓ PTO — ${fmtH(ptoH)} ▓`;
+      const box = document.getElementById(`pto-h-${i}`);
+      if (document.activeElement !== box) box.value = ptoH.toFixed(2);
       pill.className   = 'pill pill-pto';
       return;
     }
@@ -2644,6 +2675,10 @@ function update() {
 }
 
 // ── HOLIDAY BANNER ──
+function ptoLine(i) {
+  const h = ptoHours[i] || effectiveTarget(i);
+  return `${DAYS_CONFIG[i].name} PTO ACTIVE — ${fmtH(h)} CREDITED.` + (Math.abs(h - effectiveTarget(i)) < 0.01 ? ' WEEK ON TARGET.' : '');
+}
 function updateBanner() {
   const banner = document.getElementById('holiday-banner');
   const lines  = [];
@@ -2658,9 +2693,7 @@ function updateBanner() {
           ? `WEEK IS ${fmtH(short)} SHORT. MAKE UP TIME.` : 'WEEK ON TARGET.'));
       }
     }
-    if (isPtoDay(i)) {
-      lines.push(`${DAYS_CONFIG[i].name} PTO ACTIVE — ${fmtH(effectiveTarget(i))} CREDITED. WEEK ON TARGET.`);
-    }
+    if (isPtoDay(i)) lines.push(ptoLine(i));
   }
   for (let i = 0; i < 5; i++) {
     if (isOffDay(i)) lines.push(`${DAYS_CONFIG[i].name} SHUTDOWN — UNPAID. TARGET REDUCED.`);
@@ -2671,9 +2704,7 @@ function updateBanner() {
     const leave = toMin(DAYS_CONFIG[0].defaultIn) + DAYS_CONFIG[0].defaultLunch + Math.round(rippleTarget() * 60);
     lines.push(`FRIDAY HOLIDAY ACTIVE — LEAVE AT ${String(Math.floor(leave / 60)).padStart(2, "0")}:${String(leave % 60).padStart(2, "0")} MON–THU`);
   }
-  if (isPtoDay(4)) {
-    lines.push(`FRIDAY PTO ACTIVE — ${fmtH(baseTarget(4))} CREDITED. WEEK ON TARGET.`);
-  }
+  if (isPtoDay(4)) lines.push(ptoLine(4));
 
   if (lines.length === 0) {
     banner.innerHTML = '';
@@ -2939,6 +2970,7 @@ function runBootSequence(onComplete) {
 const TAB_KEY    = 'timecard_tab';
 const MONTH_ABBR = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const partialPto = [0, 0, 0, 0, 0];   // part-day PTO hours per row, from the planner
+const ptoHours   = [0, 0, 0, 0, 0];   // PTO hours of a day off (full or fewer), from the planner
 let loadedWeek = null, hadState = false, loadedSynced = false, pendingRollover = false;
 
 const pad2     = n => String(n).padStart(2, '0');
@@ -2957,6 +2989,7 @@ function syncFromPlanner() {
   keys.forEach((k, i) => {
     const m = PTO.getMode(k);
     partialPto[i] = m.mode === 'partial' ? m.hours : 0;
+    ptoHours[i]   = m.mode === 'pto' ? m.hours : 0;
     const want = (m.mode === 'hol' || m.mode === 'pto' || m.mode === 'off') ? m.mode : 'none';
     if (dayMode(i) !== want) setDayMode(i, want);
     let label = fmtKey(k);
