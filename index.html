@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Timecard">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-light-180.png">
@@ -67,6 +67,9 @@
     --panel-bg: rgba(0, 18, 0, 0.42);   /* translucent panel surface */
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* iOS 26+ tints the status bar from the page's solid background colour, not the status-bar-style tag;
+     without one it falls back to white, so give the page a solid colour under the body gradient */
+  html { background-color: #1a1a1a; }
 
   body {
     font-family: 'Share Tech Mono', monospace;
@@ -79,6 +82,8 @@
     align-items: flex-start;
     justify-content: center;
     padding: 2rem 1rem;
+    padding-top: calc(2rem + env(safe-area-inset-top));
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom));
   }
 
   /* ── MONITOR SHELL ── */
@@ -929,7 +934,7 @@
 
   /* ── DESKTOP ── */
   @media (min-width: 768px) {
-    body { padding: 3rem 2rem; align-items: center; }
+    body { padding: calc(3rem + env(safe-area-inset-top)) 2rem calc(3rem + env(safe-area-inset-bottom)); align-items: center; }
     .monitor { max-width: 720px; padding: 34px 30px 52px; }
     h1 { font-size: 32px; }
     .sys-line, .subtitle { font-size: 11px; }
@@ -957,7 +962,7 @@
   }
 
   @media (max-width: 430px) {
-    body { padding: 1rem 0.5rem; }
+    body { padding: calc(1rem + env(safe-area-inset-top)) 0.5rem calc(1rem + env(safe-area-inset-bottom)); }
     .monitor { padding: 24px 14px 42px; border-radius: 20px; }
     .screen { padding: 18px 14px; }
     .theme-toggle { left: 5px; top: 12px; }
@@ -1177,6 +1182,9 @@
     min-width: 0;
   }
   .p-form input:focus, .p-custom input:focus { border-color: var(--phosphor); box-shadow: 0 0 6px rgb(var(--phosphor-rgb) / 0.2667); }
+  /* iOS draws date inputs natively (taller, centred, ignores width/min-width); turn that off so they size like the number fields */
+  .p-form input[type=date] { -webkit-appearance: none; appearance: none; display: block; height: calc(1em + 8px); line-height: 1; text-align: left; }
+  .p-form input[type=date]::-webkit-date-and-time-value { text-align: left; margin: 0; }
   .p-form input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1) sepia(1) saturate(3) hue-rotate(80deg); opacity: 0.35; }
   .p-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
   .p-panel { border: 1px solid var(--phosphor-edge); border-left: 2px solid var(--phosphor-accent); background: var(--panel-bg); padding: 10px 11px; }
