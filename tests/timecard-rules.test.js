@@ -70,7 +70,7 @@ const t = suite('Timecard rules');
   s = await totals(a.page);
   t.ok('custom hours: target follows Settings (39H)', s.target === '39.00H', JSON.stringify(s));
   await a.page.click('.pto-btn[data-day="0"]');
-  t.ok('custom hours: Mon PTO credits 8.00H', await pill(a.page, 0) === '8.00H' && /PTO — 8\.00H/.test(await text(a.page, '#pto-display-0')));
+  t.ok('custom hours: Mon PTO credits 8.00H', await pill(a.page, 0) === '8.00H' && await a.page.inputValue('#pto-h-0') === '8.00');
   t.ok('custom hours: banner shows the 8.00H credit', /MONDAY PTO ACTIVE — 8\.00H CREDITED/.test(await text(a.page, '#holiday-banner')));
   await a.page.click('.pto-btn[data-day="0"]');
   await a.page.click('.hol-btn[data-day="1"]');
@@ -92,6 +92,27 @@ const t = suite('Timecard rules');
   t.ok('Fri holiday + Mon PTO: banner shows the 8.00H credit', /MONDAY PTO ACTIVE — 8\.00H CREDITED/.test(await text(a.page, '#holiday-banner')));
   t.ok('Fri holiday + Mon PTO: planner charges 8.00', await a.page.evaluate(() => { document.getElementById('tab-pto').click(); return /-8\.00/.test(document.querySelector('button.p-day[data-k="2026-11-02"]').textContent); }));
   t.ok('no page errors (Fri holiday + PTO)', a.errors.length === 0, a.errors.join('|'));
+  await a.ctx.close();
+
+  // PTO hours box: a day off charged fewer hours (worked 2h extra, so Friday needs only 5 of its 7)
+  a = await open({});
+  await a.page.click('.pto-btn[data-day="4"]');
+  t.ok('PTO box starts at the full day (Fri 7.00)', await a.page.inputValue('#pto-h-4') === '7.00');
+  await setTime(a.page, 'out-0', '18:15'); await setTime(a.page, 'out-1', '18:15');
+  s = await totals(a.page);
+  t.ok('2h extra Mon/Tue with a full Friday PTO -> 2.00H over', s.diff === '+2.00H', JSON.stringify(s));
+  await a.page.fill('#pto-h-4', '5'); await a.page.press('#pto-h-4', 'Enter'); await a.page.locator('#pto-h-4').blur();
+  s = await totals(a.page);
+  t.ok('PTO box 5 -> Friday credits 5.00H and the week is on target', await pill(a.page, 4) === '5.00H' && s.total === '40.00H' && s.diff === 'ON TARGET', JSON.stringify(s));
+  t.ok('banner shows the 5.00H credit', /FRIDAY PTO ACTIVE — 5\.00H CREDITED/.test(await text(a.page, '#holiday-banner')));
+  t.ok('planner stores Friday as a day off charged 5.00', await a.page.evaluate(() => { const e = JSON.parse(localStorage.getItem('pto-planner-v1')).days['2026-11-06']; return e.t === 'pto' && e.h === 5 && e.off === true; }));
+  await a.page.click('#tab-pto'); await a.page.click('#tab-timecard');
+  t.ok('switching tabs re-reads the planner: still 5.00 in the box', await a.page.inputValue('#pto-h-4') === '5.00' && await pill(a.page, 4) === '5.00H');
+  await a.page.fill('#pto-h-4', '7'); await a.page.locator('#pto-h-4').blur();
+  t.ok('typing the full day back stores a full day', await a.page.evaluate(() => JSON.parse(localStorage.getItem('pto-planner-v1')).days['2026-11-06'].full === true) && await pill(a.page, 4) === '7.00H');
+  await a.page.evaluate(() => { const b = document.getElementById('pto-h-4'); b.value = '0'; b.dispatchEvent(new Event('change', { bubbles: true })); });
+  t.ok('a bad value is ignored', await pill(a.page, 4) === '7.00H' && await a.page.inputValue('#pto-h-4') === '7.00');
+  t.ok('no page errors (PTO hours box)', a.errors.length === 0, a.errors.join('|'));
   await a.ctx.close();
 
   // planner-driven: part-day PTO credit
