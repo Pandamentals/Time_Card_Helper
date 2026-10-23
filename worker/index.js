@@ -11,8 +11,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname !== '/api/backup') return json({ error: 'not found' }, 404);
 
-    const email = await accessEmail(request, env);
-    if (!email) return json({ error: 'sign in required' }, 401);
+    const signedIn = await accessEmail(request, env);
+    if (!signedIn) return json({ error: 'sign in required' }, 401);
+    const email = owner(signedIn, env);
     await ensureTable(env.DB);
 
     if (request.method === 'GET') {
@@ -40,6 +41,16 @@ export default {
     return json({ error: 'method not allowed' }, 405);
   },
 };
+
+// One person, two sign-ins (work + personal email) share one backup. EMAIL_ALIASES is a Worker secret set in
+// the dashboard, so no addresses live in the repo: "personal@gmail.com=work@company.com", one pair per line or comma.
+function owner(email, env) {
+  for (const pair of String(env.EMAIL_ALIASES || '').split(/[\n,]/)) {
+    const [alias, main] = pair.split('=').map(x => (x || '').trim().toLowerCase());
+    if (alias && main && alias === email) return main;
+  }
+  return email;
+}
 
 // only the known keys, as strings, with a sane timestamp
 function sanitize(body) {
