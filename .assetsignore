@@ -1,0 +1,15 @@
+# Repo files the Worker should not serve; only the app (index.html, sw.js, manifest, icons) goes out
+.git
+.github
+.gitignore
+.assetsignore
+.wrangler
+.claude
+node_modules
+tests
+worker
+wrangler.jsonc
+package.json
+package-lock.json
+*.md
+mascot-preview-*.html

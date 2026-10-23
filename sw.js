@@ -1,4 +1,4 @@
-const CACHE = "timecard-v30";
+const CACHE = "timecard-v31";
 const FILES = [
   "./index.html",
   "./manifest.json",
@@ -28,6 +28,8 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
+  // the backup API always goes to the network, never the cache
+  if (new URL(e.request.url).pathname.startsWith("/api/")) return;
   // Page loads try the network first so a new version shows on the next launch; offline falls back to the cache
   if (e.request.mode === "navigate") {
     e.respondWith(
