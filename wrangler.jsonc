@@ -1,6 +1,6 @@
 {
 	// Serves the PWA from Cloudflare plus a small backup API. The name must match the Worker in the dashboard.
-	"name": "timecard-helper",
+	"name": "time-card-helper",
 	"compatibility_date": "2026-10-13",
 	"main": "worker/index.js",
 	"assets": {
