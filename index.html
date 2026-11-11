@@ -679,42 +679,43 @@
   .away-btn:hover { border-color: #0088cc44; color: #0088cc66; }
   .away-btn.active { background: var(--cyan-bg); border-color: var(--cyan-mid); color: var(--cyan); box-shadow: 0 0 4px rgb(var(--cyan-rgb) / 0.1333); }
 
-  .away-block {
-    display: none;
-    margin-bottom: 7px;
-    padding: 7px 9px;
-    border: 1px dashed #00446655;
-    background: rgba(0,8,16,0.6);
-  }
-  .away-block.visible { display: block; }
+  /* one-line tag on the card; tap it (or [AWAY]) to edit in the away dialog */
+  .away-tag { width: 100%; margin: -2px 0 8px; padding: 4px 7px; text-align: left; cursor: pointer;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--cyan);
+    background: var(--cyan-bg); border: 1px solid var(--cyan-deep); border-left: 3px solid var(--cyan);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .away-tag[hidden] { display: none; }
+  .away-tag:hover, .away-tag:focus-visible { border-color: var(--cyan-mid); box-shadow: 0 0 6px rgb(var(--cyan-rgb) / 0.25); outline: none; }
+  .away-tag .t-time { color: var(--white); text-shadow: 0 0 4px rgb(var(--cyan-rgb) / 0.5); }
+  .away-tag .t-chip { padding: 0 4px; border: 1px solid var(--cyan-mid); color: var(--cyan-mid); font-size: 9px; }
+  .away-tag .t-off  { margin-left: auto; }
+  .away-tag .t-edit { color: var(--cyan-mid); font-size: 9px; }
+  .away-tag.warn { border-color: var(--amber-deep); border-left-color: var(--amber); color: var(--amber); background: var(--amber-bg); }
 
-  .away-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-  .away-title {
-    font-size: 9px;
-    color: var(--cyan-mid);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .away-clear {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px;
-    padding: 1px 5px;
-    border: 1px solid #440000;
-    background: var(--black);
-    color: #660000;
-    cursor: pointer;
-    letter-spacing: 1px;
-    transition: all 0.15s;
-  }
-  .away-clear:hover { border-color: rgb(var(--red-rgb) / 0.2667); color: rgb(var(--red-rgb) / 0.4); }
-
-  .away-times { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  /* away dialog: the planner's .p-sheet, in cyan */
+  .p-sheet.away-sheet { border-color: var(--cyan); box-shadow: 0 12px 40px rgba(0,0,0,0.8), 0 0 24px rgb(var(--cyan-rgb) / 0.2), inset 0 0 30px rgba(0,0,0,0.5); }
+  .away-sheet .a-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .away-sheet .a-sys  { font-size: 9px; color: var(--cyan-mid); letter-spacing: 2px; margin-bottom: 3px; }
+  .away-sheet .a-x { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px; padding: 3px 6px; background: var(--black); color: var(--phosphor-dim); border: 1px solid var(--phosphor-line); cursor: pointer; }
+  .away-sheet .a-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .away-sheet .time-label { color: var(--cyan-mid); }
+  .away-sheet input[type=time] { font-size: 24px; padding: 6px 8px; border-color: var(--cyan-deep); color: var(--white); }
+  .away-sheet input[type=time]:focus { border-color: var(--cyan); box-shadow: 0 0 6px rgb(var(--cyan-rgb) / 0.3); }
+  .away-sheet .a-check { align-self: flex-start; display: flex; align-items: center; gap: 7px; padding: 4px 0; background: none; border: 0; cursor: pointer;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--cyan-mid); }
+  .away-sheet .a-check[hidden] { display: none; }
+  .away-sheet .a-check::before { content: ''; width: 11px; height: 11px; border: 1px solid var(--cyan-mid); box-sizing: border-box; }
+  .away-sheet .a-check[aria-pressed="true"] { color: var(--cyan); }
+  .away-sheet .a-check[aria-pressed="true"]::before { background: var(--cyan); box-shadow: inset 0 0 0 2px var(--black), 0 0 4px rgb(var(--cyan-rgb) / 0.4); }
+  .away-sheet .a-foot { display: flex; align-items: center; gap: 7px; }
+  .away-sheet .a-resbox { flex: 1; display: flex; flex-direction: column; gap: 3px; line-height: 1; min-width: 0; }
+  .away-sheet .a-res { font-family: 'VT323', monospace; font-size: 22px; letter-spacing: 1px; color: var(--cyan); text-shadow: 0 0 5px rgb(var(--cyan-rgb) / 0.4); font-variant-numeric: tabular-nums; }
+  .away-sheet .a-res.wait, .away-sheet .a-res.bad { font-family: 'Share Tech Mono', monospace; font-size: 10px; text-shadow: none; color: var(--phosphor-dim); }
+  .away-sheet .a-res.bad { color: var(--red); }
+  .away-sheet .a-day { font-size: 9px; letter-spacing: 1px; color: var(--phosphor-dim); }
+  .away-sheet .p-btn.save { border-color: var(--cyan); color: var(--cyan); }
+  .away-sheet .p-btn.save:hover { background: var(--cyan-bg); }
+  .away-sheet .p-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
   .pill-inner { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
   .pill-sub { font-size: 11px; color: var(--cyan); opacity: 0.85; letter-spacing: 0.5px; margin-top: 1px; }
@@ -2214,28 +2215,14 @@ DAYS_CONFIG.forEach((day, i) => {
       <div class="day-btns">
         <button class="hol-btn" data-day="${i}" aria-pressed="false" title="Mark as a paid holiday — credits 8.00H, hides clock in/out">[HOL]</button>
         <button class="pto-btn" data-day="${i}" aria-pressed="false" title="Mark as PTO — credits your normal hours for this day">[PTO]</button>
-        <button class="away-btn" data-day="${i}" aria-pressed="false" title="Block out an away period (e.g. appointment) — subtracted from hours worked">[AWAY]</button>
+        <button class="away-btn" data-day="${i}" aria-pressed="false" title="Log time away (punched out, then back in) — subtracted from hours worked">[AWAY]</button>
       </div>
     </div>
     <div class="holiday-display" id="hol-display-${i}">▓ HOLIDAY — 8.00H ▓</div>
     <div class="pto-display" id="pto-display-${i}">▓ PTO <input class="pto-hours" id="pto-h-${i}" data-day="${i}" type="number" step="0.25" min="0.25" max="24" inputmode="decimal" aria-label="PTO hours for ${day.name.toLowerCase()}">H ▓</div>
     <div class="off-display" id="off-display-${i}">▓ SHUTDOWN — UNPAID ▓</div>
-    <div class="away-block" id="away-block-${i}">
-      <div class="away-header">
-        <span class="away-title">▸ AWAY FROM → TO</span>
-        <button class="away-clear" data-day="${i}" title="Clear away period">[ × ]</button>
-      </div>
-      <div class="away-times">
-        <div class="time-group">
-          <label class="time-label" for="away-in-${i}">Away start</label>
-          <input type="time" id="away-in-${i}" value="">
-        </div>
-        <div class="time-group">
-          <label class="time-label" for="away-out-${i}">Away end</label>
-          <input type="time" id="away-out-${i}" value="">
-        </div>
-      </div>
-    </div>
+    <button type="button" class="away-tag" id="away-tag-${i}" data-day="${i}" hidden></button>
+    <input type="hidden" id="away-in-${i}" value=""><input type="hidden" id="away-out-${i}" value="">
     <div class="times-row" id="times-${i}">
       <div class="time-group">
         <label class="time-label" for="in-${i}">Clock in</label>
@@ -2281,12 +2268,40 @@ function isOffDay(i) {
 function isAwayDay(i) {
   return !!document.querySelector(`.away-btn[data-day="${i}"]`)?.classList.contains('active');
 }
-function getAwayMins(i) {
-  const awIn  = document.getElementById(`away-in-${i}`).value;
-  const awOut = document.getElementById(`away-out-${i}`).value;
-  if (!awIn || !awOut) return 0;
-  const mins = roundQ(toMin(awOut)) - roundQ(toMin(awIn));
-  return mins > 0 ? mins : 0;
+// Away block = a punch out and back in. One rule for the card, the pill and the dialog:
+// - a back-in earlier than the punch-out (1:30 after 11:30) is read as PM
+// - only the part inside the shift counts, rounded to the quarter hour like the timesheet
+// - away that touches 12:00–1:30 is assumed to include lunch (you ate then), so the longer of the two comes off, not both;
+//   awayLunch[i] (true/false) overrides that guess
+const LUNCH_WINDOW = [12 * 60, 13 * 60 + 30];
+const awayLunch = [null, null, null, null, null];
+function dayLunch(i) {
+  const b = document.querySelector(`.lunch-btn.active[data-day="${i}"]`);
+  return b ? parseInt(b.dataset.val, 10) : DAYS_CONFIG[i].defaultLunch;
+}
+function awayCalc(i, outS, inS, lunchOverride) {
+  if (!outS || !inS) return { ok: false, why: !outS && !inS ? 'empty' : !outS ? 'out' : 'in' };
+  let a = toMin(outS), b = toMin(inS), pmFixed = false;
+  if (b <= a && b < 720 && b + 720 > a) { b += 720; pmFixed = true; }
+  if (b <= a) return { ok: false, why: 'order' };
+  const sIn = roundQ(toMin(document.getElementById(`in-${i}`).value)), sOut = roundQ(toMin(document.getElementById(`out-${i}`).value));
+  const away = Math.max(Math.min(roundQ(b), sOut) - Math.max(roundQ(a), sIn), 0);
+  const lunch = dayLunch(i);
+  const autoLunch = roundQ(a) < LUNCH_WINDOW[1] && roundQ(b) > LUNCH_WINDOW[0];
+  const lunchIn = lunchOverride ?? autoLunch;
+  const off = lunchIn ? Math.max(away, lunch) : away + lunch;
+  return { ok: true, a, b, pmFixed, away, lunch, autoLunch, lunchIn, off, extra: off - lunch, shown: lunchIn ? off : away };
+}
+function dayAway(i) {
+  return awayCalc(i, document.getElementById(`away-in-${i}`).value, document.getElementById(`away-out-${i}`).value, awayLunch[i]);
+}
+function fmt12(m) { const h = Math.floor(m / 60) % 24; return `${(h % 12) || 12}:${String(m % 60).padStart(2, '0')}${h < 12 ? 'A' : 'P'}`; }
+function toHHMM(m) { return `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; }
+function setAway(i, outV, inV, lunchOv) {
+  document.getElementById(`away-in-${i}`).value  = outV || '';
+  document.getElementById(`away-out-${i}`).value = inV  || '';
+  awayLunch[i] = lunchOv ?? null;
+  setPressed(document.querySelector(`.away-btn[data-day="${i}"]`), !!(outV || inV));
 }
 function fridayIsHoliday() { return isHolidayDay(4); }
 function setPressed(el, active) {
@@ -2600,7 +2615,6 @@ function clearDayOverride(i) {
   document.getElementById(`hol-display-${i}`).style.display = 'none';
   document.getElementById(`pto-display-${i}`).style.display = 'none';
   document.getElementById(`off-display-${i}`).style.display = 'none';
-  document.getElementById(`away-block-${i}`).style.display  = '';
   document.getElementById(`card-${i}`).classList.remove('is-holiday', 'is-pto', 'is-off');
   setPressed(document.querySelector(`.hol-btn[data-day="${i}"]`), false);
   setPressed(document.querySelector(`.pto-btn[data-day="${i}"]`), false);
@@ -2620,7 +2634,6 @@ function setDayMode(i, mode) {
   };
   document.getElementById(`times-${i}`).style.display      = 'none';
   document.getElementById(`bottom-${i}`).style.display     = 'none';
-  document.getElementById(`away-block-${i}`).style.display = 'none';
   document.getElementById(`${mode}-display-${i}`).style.display = 'block';
   document.getElementById(`card-${i}`).classList.add({ hol: 'is-holiday', pto: 'is-pto', off: 'is-off' }[mode]);
   if (mode !== 'off') setPressed(document.querySelector(`.${mode}-btn[data-day="${i}"]`), true);
@@ -2658,29 +2671,110 @@ container.addEventListener('click', e => {
     saveState(); update();
   }
 
-  // away button toggle
-  const awayBtn = e.target.closest('.away-btn');
-  if (awayBtn) {
-    const i = parseInt(awayBtn.dataset.day, 10);
-    const turningOn = !awayBtn.classList.contains('active');
-    setPressed(awayBtn, turningOn);
-    const awayBlock = document.getElementById(`away-block-${i}`);
-    awayBlock.classList.toggle('visible', turningOn);
-    awayBlock.style.display = (turningOn && (isHolidayDay(i) || isPtoDay(i))) ? 'none' : '';
-    saveState(); update(); return;
-  }
-
-  // away clear button
-  const awayClr = e.target.closest('.away-clear');
-  if (awayClr) {
-    const i = parseInt(awayClr.dataset.day, 10);
-    setPressed(document.querySelector(`.away-btn[data-day="${i}"]`), false);
-    document.getElementById(`away-block-${i}`).classList.remove('visible');
-    document.getElementById(`away-in-${i}`).value  = '';
-    document.getElementById(`away-out-${i}`).value = '';
-    saveState(); update(); return;
-  }
+  // [AWAY] or the card's away tag opens the away dialog
+  const awayOpen = e.target.closest('.away-btn, .away-tag');
+  if (awayOpen) { openAwayDialog(parseInt(awayOpen.dataset.day, 10), awayOpen); return; }
 });
+
+// ── AWAY: one-line tag on the card ──
+function drawAwayTag(i) {
+  const tag = document.getElementById(`away-tag-${i}`);
+  const show = isAwayDay(i) && dayMode(i) === 'none';
+  tag.hidden = !show;
+  if (!show) return;
+  const r = dayAway(i);
+  tag.classList.toggle('warn', !r.ok);
+  tag.innerHTML = r.ok
+    ? `<span>▸ AWAY</span><span class="t-time">${fmt12(r.a)} → ${fmt12(r.b)}</span>${r.lunchIn ? '<span class="t-chip">LUNCH INCL</span>' : ''}<span class="t-off">−${(r.shown / 60).toFixed(2)}H</span><span class="t-edit">[EDIT]</span>`
+    : `<span>⚠ AWAY: ${r.why === 'order' ? 'BACK IN IS BEFORE OUT' : 'ADD BOTH TIMES'}</span><span class="t-off t-edit">[FIX]</span>`;
+  tag.setAttribute('aria-label', r.ok ? `Edit away time, ${fmt12(r.a)} to ${fmt12(r.b)}` : 'Fix away time');
+}
+
+// ── AWAY: dialog (lives on <body> like the planner's day dialog, sized to the visible CRT screen) ──
+const awayRoot = document.createElement('div');
+document.body.appendChild(awayRoot);
+let awayOpenDay = null, awayReturnFocus = null;
+function fitAwaySheet() {
+  if (awayOpenDay === null) return;
+  const scr = document.querySelector('.screen');
+  if (!scr) return;
+  const r = scr.getBoundingClientRect(), top = Math.max(r.top, 0), bottom = Math.min(r.bottom, window.innerHeight);
+  const st = awayRoot.style;
+  st.setProperty('--vl', r.left + 'px'); st.setProperty('--vw', r.width + 'px');
+  st.setProperty('--vt', top + 'px');    st.setProperty('--vh', Math.max(bottom - top, 0) + 'px');
+}
+window.addEventListener('scroll', fitAwaySheet, { passive: true });
+window.addEventListener('resize', fitAwaySheet);
+
+function closeAwayDialog() {
+  if (awayOpenDay === null) return;
+  awayOpenDay = null; awayRoot.innerHTML = '';
+  if (awayReturnFocus && document.contains(awayReturnFocus)) awayReturnFocus.focus();
+  else { const b = document.querySelector('.away-btn:focus-visible'); b && b.focus(); }
+}
+function openAwayDialog(i, from) {
+  awayOpenDay = i; awayReturnFocus = from;
+  let lunchOv = awayLunch[i];
+  const has = isAwayDay(i);
+  const date = document.getElementById(`date-${i}`).textContent.trim();
+  awayRoot.innerHTML = `
+    <div class="p-scrim" id="a-scrim"></div>
+    <div class="p-sheet away-sheet" role="dialog" aria-modal="true" aria-labelledby="a-title">
+      <div class="a-head"><div><div class="a-sys">TIMESYS // LOG AWAY</div><h3 id="a-title">AWAY · ${DAYS_CONFIG[i].name.slice(0, 3)} ${date}</h3></div>
+        <button type="button" class="a-x" id="a-close" aria-label="Close">[ × ]</button></div>
+      <div class="a-row">
+        <div class="time-group"><label class="time-label" for="a-out">Punched out</label><input type="time" id="a-out"></div>
+        <div class="time-group"><label class="time-label" for="a-in">Back in</label><input type="time" id="a-in"></div>
+      </div>
+      <button type="button" class="a-check" id="a-lunch" aria-pressed="false" hidden>ATE LUNCH DURING THIS</button>
+      <div class="a-foot">
+        <div class="a-resbox"><span class="a-res" id="a-res" role="status"></span><span class="a-day" id="a-day"></span></div>
+        ${has ? '<button type="button" class="p-btn danger" id="a-del">REMOVE</button>' : ''}
+        <button type="button" class="p-btn save" id="a-save">[ SAVE ]</button>
+      </div>
+    </div>`;
+  fitAwaySheet();
+  const q = sel => awayRoot.querySelector(sel);
+  const outEl = q('#a-out'), inEl = q('#a-in');
+  outEl.value = document.getElementById(`away-in-${i}`).value;
+  inEl.value  = document.getElementById(`away-out-${i}`).value;
+  let cur = null;
+  function render() {
+    const r = cur = awayCalc(i, outEl.value, inEl.value, lunchOv);
+    const lb = q('#a-lunch');
+    lb.hidden = !(r.ok && (r.autoLunch || lunchOv != null));   // only asks when the away time is over lunch
+    lb.setAttribute('aria-pressed', String(!!(r.ok && r.lunchIn)));
+    const res = q('#a-res');
+    res.className = 'a-res' + (r.ok ? '' : r.why === 'order' ? ' bad' : ' wait');
+    res.textContent = r.ok ? `−${(r.shown / 60).toFixed(2)}H`
+      : r.why === 'order' ? 'BACK IN IS BEFORE OUT' : r.why === 'in' ? 'ADD BACK IN' : r.why === 'out' ? 'ADD PUNCHED OUT' : '';
+    const sIn = roundQ(toMin(document.getElementById(`in-${i}`).value)), sOut = roundQ(toMin(document.getElementById(`out-${i}`).value));
+    q('#a-day').textContent = r.ok ? `${r.pmFixed ? `BACK IN READ AS ${fmt12(r.b)} · ` : ''}DAY TOTAL ${((sOut - sIn - r.lunch - r.extra) / 60).toFixed(2)}H` : '';
+    q('#a-save').disabled = !r.ok;
+  }
+  ['input', 'change'].forEach(ev => { outEl.addEventListener(ev, render); inEl.addEventListener(ev, render); });
+  q('#a-lunch').addEventListener('click', () => { lunchOv = !cur.lunchIn; if (lunchOv === cur.autoLunch) lunchOv = null; render(); });
+  q('#a-close').addEventListener('click', closeAwayDialog);
+  q('#a-scrim').addEventListener('click', closeAwayDialog);
+  q('#a-save').addEventListener('click', () => {
+    if (!cur || !cur.ok) return;
+    setAway(i, toHHMM(cur.a), toHHMM(cur.b), lunchOv);
+    saveState(); update(); closeAwayDialog();
+  });
+  q('#a-del')?.addEventListener('click', () => { setAway(i, '', '', null); saveState(); update(); closeAwayDialog(); });
+  q('.away-sheet').addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); closeAwayDialog(); }
+    else if (e.key === 'Enter' && e.target.tagName === 'INPUT' && !q('#a-save').disabled) { e.preventDefault(); q('#a-save').click(); }
+    else if (e.key === 'Tab') {   // keep focus inside the dialog
+      const f = [...awayRoot.querySelectorAll('input, button:not([hidden]):not(:disabled)')].filter(el => !el.closest('[hidden]'));
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+  render();
+  outEl.focus();
+}
 
 // ── MAIN UPDATE ──
 function update() {
@@ -2694,6 +2788,7 @@ function update() {
   DAYS_CONFIG.forEach((day, i) => {
     const pill    = document.getElementById(`pill-${i}`);
     const eTarget = effectiveTarget(i);
+    drawAwayTag(i);
 
     if (isHolidayDay(i)) {
       total += HOLIDAY_HOURS;
@@ -2721,10 +2816,9 @@ function update() {
     const outV = document.getElementById(`out-${i}`).value;
     if (!inV || !outV) { pill.innerHTML = '–'; pill.className = 'pill pill-none'; return; }
 
-    const activeBtn = document.querySelector(`.lunch-btn.active[data-day="${i}"]`);
-    const lunch     = activeBtn ? parseInt(activeBtn.dataset.val, 10) : day.defaultLunch;
-    const awayMins  = isAwayDay(i) ? getAwayMins(i) : 0;
-    const worked    = (roundQ(toMin(outV)) - roundQ(toMin(inV)) - lunch - awayMins) / 60;
+    const lunch     = dayLunch(i);
+    const aw        = isAwayDay(i) ? dayAway(i) : null;
+    const worked    = (roundQ(toMin(outV)) - roundQ(toMin(inV)) - lunch - (aw && aw.ok ? aw.extra : 0)) / 60;
     if (worked <= 0) { pill.innerHTML = 'ERR'; pill.className = 'pill pill-short'; return; }
     const credit = partialPto[i]; // part-day PTO planned for this date
     total += worked + credit;
@@ -2732,7 +2826,7 @@ function update() {
     const delta = worked + credit - eTarget;
     pill.className = 'pill ' + (Math.abs(delta) < 0.01 ? 'pill-ok' : delta < 0 ? 'pill-short' : 'pill-over');
     const subs = [];
-    if (awayMins > 0) subs.push(`-${(awayMins / 60).toFixed(2)}`);
+    if (aw && aw.ok && aw.shown > 0) subs.push(`${aw.lunchIn ? 'AWAY+LUNCH' : 'AWAY'} −${(aw.shown / 60).toFixed(2)}`);
     if (credit > 0)   subs.push(`<span class="pill-credit">+${credit.toFixed(2)} PTO</span>`);
     pill.innerHTML = subs.length
       ? `<span class="pill-inner"><span>${worked.toFixed(2)}H</span><span class="pill-sub">${subs.join(' ')}</span></span>`
@@ -2821,6 +2915,7 @@ function saveState() {
         away:     isAwayDay(i),
         awayIn:   document.getElementById(`away-in-${i}`).value  || null,
         awayOut:  document.getElementById(`away-out-${i}`).value || null,
+        awayLunch: awayLunch[i],
         savedIn:  savedTimes[i]?.inV  || null,
         savedOut: savedTimes[i]?.outV || null,
       }))
@@ -2846,15 +2941,7 @@ function loadState() {
       // HOL/PTO come back from the planner (initWeek / syncFromPlanner); this only restores pre-planner flags
       setDayMode(i, d.holiday ? 'hol' : d.pto ? 'pto' : 'none');
 
-      if (d.away) {
-        const ab = document.querySelector(`.away-btn[data-day="${i}"]`);
-        setPressed(ab, true);
-        const awayBlock = document.getElementById(`away-block-${i}`);
-        awayBlock.classList.add('visible');
-        awayBlock.style.display = (d.holiday || d.pto) ? 'none' : '';
-        if (d.awayIn)  document.getElementById(`away-in-${i}`).value  = d.awayIn;
-        if (d.awayOut) document.getElementById(`away-out-${i}`).value = d.awayOut;
-      }
+      if (d.away) setAway(i, d.awayIn, d.awayOut, d.awayLunch);
     });
   } catch(e) { console.warn('State load failed', e); }
 }
@@ -2893,15 +2980,11 @@ function resetWeekData() {
     setPressed(def, true);
     setPressed(document.querySelector(`.hol-btn[data-day="${i}"]`), false);
     setPressed(document.querySelector(`.pto-btn[data-day="${i}"]`), false);
-    setPressed(document.querySelector(`.away-btn[data-day="${i}"]`), false);
+    setAway(i, '', '', null);
     document.getElementById(`times-${i}`).style.display       = '';
     document.getElementById(`bottom-${i}`).style.display      = '';
     document.getElementById(`hol-display-${i}`).style.display = 'none';
     document.getElementById(`pto-display-${i}`).style.display = 'none';
-    document.getElementById(`away-block-${i}`).style.display  = '';
-    document.getElementById(`away-block-${i}`).classList.remove('visible');
-    document.getElementById(`away-in-${i}`).value             = '';
-    document.getElementById(`away-out-${i}`).value            = '';
     clearDayOverride(i);
   });
   syncFromPlanner();
