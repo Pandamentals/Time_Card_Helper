@@ -24,6 +24,7 @@ Environment overrides (optional):
 
 | Suite | Covers |
 |---|---|
+| `away.test.js` | The [AWAY] dialog (punched out / back in), the card tag, back-in read as PM, missing times called out, only time inside the shift counts, lunch counted once when away is over 12:00-1:30 (with the checkbox override), Remove, reload, old saved data |
 | `timecard-rules.test.js` | Quarter-hour rounding, lunch, away blocks, holiday = 8.00H, PTO = the day's normal hours (8.25 Mon-Thu, 7.00 Fri; 8.00 Mon-Thu in a Friday-holiday week), the Friday-holiday ripple, day hours taken from planner Settings, part-day PTO, unpaid shutdown, week dates, Reset Week |
 | `planner-logic.test.js` | Balance projection, payday accrual, PTO cost per weekday (8.00 Mon-Thu in a Friday-holiday week), free holidays, Jan 1 rollover cap, overdraw warnings, the `setMode`/`getMode` contract the timecard relies on |
 | `planner-ui.test.js` | Month pager, quick-pick month list, swipe, Calendar/Settings sub-tabs, red-month markers, narrow screens |

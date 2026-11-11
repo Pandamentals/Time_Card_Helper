@@ -31,8 +31,8 @@ const t = suite('Timecard rules');
   await a.page.click('.lunch-btn[data-day="0"][data-val="45"]');
   t.ok('45-minute lunch gives 8.50H', await pill(a.page, 0) === '8.50H');
   await a.page.click('.lunch-btn[data-day="0"][data-val="60"]');
-  await a.page.click('.away-btn[data-day="1"]'); await setTime(a.page, 'away-in-1', '12:00'); await setTime(a.page, 'away-out-1', '12:30');
-  t.ok('an away block is subtracted (8.25 - 0.50 = 7.75H)', (await pill(a.page, 1)).startsWith('7.75H') && (await pill(a.page, 1)).includes('-0.50'), await pill(a.page, 1));
+  await a.page.click('.away-btn[data-day="1"]'); await a.page.fill('#a-out', '14:00'); await a.page.fill('#a-in', '14:30'); await a.page.click('#a-save');
+  t.ok('an away block is subtracted (8.25 - 0.50 = 7.75H)', (await pill(a.page, 1)).startsWith('7.75H') && (await pill(a.page, 1)).includes('AWAY −0.50'), await pill(a.page, 1));
   t.ok('no page errors (default week)', a.errors.length === 0, a.errors.join('|')); await a.ctx.close();
 
   // holiday mid-week credits 8.00H -> week 15 minutes short
